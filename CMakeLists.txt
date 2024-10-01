@@ -7,5 +7,8 @@ project($project_name LANGUAGES CXX)
 
 find_package(SDL2)
 
-add_subdirectory(src)
+include_directories(include)
+
 add_subdirectory(vendor)
+add_subdirectory(src)
+add_subdirectory(tests)
