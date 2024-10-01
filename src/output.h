@@ -1,4 +1,0 @@
-namespace output 
-{
-    void init();
-}
