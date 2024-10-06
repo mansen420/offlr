@@ -12,10 +12,12 @@
 /**
  * @brief World to raster transform : typical translate -> scale -> rotate transform
  */
-rasterizer::rasterizer(uint rasterWidth, uint rasterHeight, glm::vec2 worldX, glm::vec2 worldY) : raster(new output::RGBA32[rasterWidth * rasterHeight]),
-rasterWidth(rasterWidth), rasterHeight(rasterHeight)
+rasterizer::rasterizer(uint rasterWidth, uint rasterHeight, glm::vec2 worldX, glm::vec2 worldY, output::RGBA32* rasterPtr) 
+: raster(rasterPtr == nullptr ? new output::RGBA32[rasterWidth * rasterHeight] : rasterPtr), rasterWidth(rasterWidth), rasterHeight(rasterHeight), 
+ownsRaster(rasterPtr == nullptr ? true : false)
 {
-    std::fill(raster, raster + rasterHeight*rasterWidth, output::RGBA32{255, 255, 255, 255});
+    if(ownsRaster)
+        std::fill(raster, raster + rasterHeight*rasterWidth, output::RGBA32{255, 255, 255, 255});
 
     float worldXSpan = worldX[1] - worldX[0];
     float worldYSpan = worldY[1] - worldY[0];
@@ -28,7 +30,7 @@ rasterWidth(rasterWidth), rasterHeight(rasterHeight)
 
     WtoSCR = glm::mat3(leftCol, midCol, rightCol);
 }
-void rasterizer::draw_point(glm::vec2 worldCoords, output::RGBA32 color)
+inline void rasterizer::draw_point(glm::vec2 worldCoords, output::RGBA32 color)
 {
     glm::vec3 homogCoords(worldCoords, 1.f);
     auto screenCoords = WtoSCR * homogCoords;
@@ -56,27 +58,53 @@ void rasterizer::draw_line_midpoint_world(glm::vec2 worldP1, glm::vec2 worldP2, 
     glm::vec<2, uint> p2(WtoSCR * glm::vec3(worldP2, 1.f));
     draw_line_midpoint_scr(p1,  p2, color);
 }
-void rasterizer::draw_line_midpoint_scr(glm::vec<2, uint> P1, glm::vec<2, uint> P2, output::RGBA32 color = {255, 255, 255, 255})
+void rasterizer::clear(output::RGBA32 color)
 {
-    const uint dx = std::abs(int(P2.x - P1.x));
-    const uint dy = std::abs(int(P2.y - P1.x));
+    std::fill(raster, raster + rasterHeight*rasterWidth, color);
+}
+void rasterizer::draw_line_midpoint_scr(glm::vec<2, int> P1, glm::vec<2, int> P2, output::RGBA32 color = {255, 255, 255, 255})
+{   
+    int dx = std::abs(P2.x - P1.x), dy = std::abs(P2.y - P1.y);
+    
+    bool steep = dy > dx;
 
-    //if(dy > dx)
-        //TODO handle this
+    if(steep)
+        std::swap(dy, dx);
 
+    short int xStep = 1, yStep = 1;
     if(P1.x > P2.x)
-        std::swap(P1, P2); 
+        xStep = -1;
+    if(P1.y > P2.y)
+        yStep = -1;
+        
+    int D = 2 * dy - dx;
+    int delatDprimary = 2 * dy;
+    int deltaDsecondary = 2 * (dy - dx);
+
     uint x = P1.x;
     uint y = P1.y;
-
-    while(x < P2.x)
+    
+    // draw first point
+    raster[y*rasterWidth + x] = color;
+   
+    for(size_t i = 0; i < dx; ++i)
     {
-        float FxyAtMidpoint = -(y + 0.5f)*dx + (x + 1.f)*dy - P1.x*P2.y + P2.x*P1.y;
-        if(FxyAtMidpoint < 0)
-            y++; 
-        if(!(y >= rasterHeight || x >= rasterWidth))
+        if(D > 0)
+        {
+            if(steep)
+                x += xStep;
+            else
+                y +=yStep;
+            D += deltaDsecondary;
+        }
+        else
+            D += delatDprimary;
+        if(steep)
+            y += yStep;
+        else
+            x += xStep;
+        if(y < rasterHeight && x < rasterWidth) 
             raster[y*rasterWidth + x] = color;
-        x++;
     }
 }
 void rasterizer::RGB_test()
@@ -91,5 +119,6 @@ void rasterizer::RGB_test()
 
 rasterizer::~rasterizer()
 {
-    delete [] raster;
+    if(ownsRaster)
+        delete [] raster;
 }

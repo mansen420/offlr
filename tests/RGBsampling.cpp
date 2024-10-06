@@ -25,7 +25,7 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
         R.sample_raster(WND.height, WND.width, WND.framebuffer); 
         WND.write_frame();
 
-        std::cout << frameTimer.clock().count() << " ms" << '\r';
+        std::cout << frameTimer.clock().count() << " ms" << std::endl;
     }
     output::terminate();
     return 0;
