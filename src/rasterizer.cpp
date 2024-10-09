@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <numeric>
 #include <sys/types.h>
+#include <tuple>
 #include <utility>
 #include "rasterizer.h"
 
@@ -116,7 +117,27 @@ void rasterizer::RGB_test()
             this->raster[i*rasterWidth + j] = C;
         }
 }
-
+inline std::tuple<float, float, float> get_barycentric_coords(glm::vec2 a, glm::vec2 b, glm::vec2 c, glm::vec2 P)
+{
+    float alpha = ((b.y - c.y)*P.x + (c.x - b.x)*P.y + b.x*c.y - c.x*b.y)/((b.y - c.y)*a.x + (c.x - b.x)*a.y + b.x*c.y - c.x*b.y);
+    float beta  = ((a.y - c.y)*P.x + (c.x - a.x)*P.y + a.x*c.y - c.x*a.y)/((a.y - c.y)*b.x + (c.x - a.x)*b.y + a.x*c.y - c.x*a.y);
+    float gamma = ((a.y - b.y)*P.x + (a.x - b.x)*P.y + a.x*b.y - a.x*b.y)/((a.y - b.y)*c.x + (a.x - b.x)*c.y + a.x*b.y - a.x*b.y);
+    return std::make_tuple(alpha, beta, gamma);
+}
+void rasterizer::draw_triangle_scr(glm::vec<2, int> a, glm::vec<2, int> b, glm::vec<2, int> c, glm::vec<3, glm::vec3> per_vertex_color)
+{
+    for(size_t x = 0; x < rasterWidth; ++x)
+        for(size_t y = 0; y < rasterHeight; ++y)
+        {
+            auto bary_coords = get_barycentric_coords(a, b, c, {x, y});
+            if (std::get<0>(bary_coords) > 0 && std::get<1>(bary_coords) > 0 && std::get<2>(bary_coords) > 0)
+            {
+                glm::vec3 color = per_vertex_color[0] * std::get<0>(bary_coords) + per_vertex_color[1] * std::get<1>(bary_coords) + 
+                per_vertex_color[2] * std::get<2>(bary_coords);
+                raster[y*rasterWidth + x] = {uint8_t(color.r * 255), uint8_t(color.g * 255), uint8_t(color.b * 255), 255};
+            }
+        }
+}
 rasterizer::~rasterizer()
 {
     if(ownsRaster)
