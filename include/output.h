@@ -1,18 +1,15 @@
 #pragma once
 
+#include "glm/glm.hpp"
+
 #include "SDL.h"
 #include <cstddef>
 #include <stdexcept>
 
 namespace output
 {
-    struct RGBA32
-    {
-        uint8_t R;
-        uint8_t G;
-        uint8_t B;
-        uint8_t A;
-    };
+    typedef glm::vec<4, glm::uint8> RGBA32;
+
     void init();
     void terminate();
     class window

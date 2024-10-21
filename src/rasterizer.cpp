@@ -1,7 +1,9 @@
 #include "glm/fwd.hpp"
+#include "glm/geometric.hpp"
 #include "glm/glm.hpp"
 #include "output.h"
 #include <algorithm>
+#include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <numeric>
@@ -10,33 +12,67 @@
 #include <utility>
 #include "rasterizer.h"
 
-/**
- * @brief World to raster transform : typical translate -> scale -> rotate transform
- */
-rasterizer::rasterizer(uint rasterWidth, uint rasterHeight, glm::vec2 worldX, glm::vec2 worldY, output::RGBA32* rasterPtr) 
+rasterizer::rasterizer(uint rasterWidth, uint rasterHeight, glm::vec2 worldX, glm::vec2 worldY, glm::vec2 worldZ, output::RGBA32* rasterPtr) 
 : raster(rasterPtr == nullptr ? new output::RGBA32[rasterWidth * rasterHeight] : rasterPtr), rasterWidth(rasterWidth), rasterHeight(rasterHeight), 
 ownsRaster(rasterPtr == nullptr ? true : false)
 {
     if(ownsRaster)
         std::fill(raster, raster + rasterHeight*rasterWidth, output::RGBA32{255, 255, 255, 255});
 
+    glm::vec4 col4(float(rasterWidth - 1)/2.f, float(rasterHeight - 1)/2.f, 0.f, 1.f);
+    glm::vec4 col3(0.f, 0.f, 1.f, 0.f);
+    glm::vec4 col2(0.f, float(rasterHeight)/2.f, 0.f, 0.f);
+    glm::vec4 col1(float(rasterWidth)/2.f, 0.f, 0.f, 0.f);
+
+    canonicalToSCR = glm::mat4(col1, col2, col3, col4);
+    
     float worldXSpan = worldX[1] - worldX[0];
     float worldYSpan = worldY[1] - worldY[0];
+    float worldZSpan = worldZ[1] - worldZ[0];
     float worldXmidPoint = (worldX[0] + worldX[1])/2.f;
     float worldYmidPoint = (worldY[0] + worldY[1])/2.f;
+    float worldZmidPoint = (worldZ[0] + worldZ[1])/2.f;
+    
+    col4 = glm::vec4(-worldXmidPoint, -worldYmidPoint, -worldZmidPoint, 1.f);
+    col3 = glm::vec4(0.f, 0.f, 2.f/worldZSpan, 0.f);
+    col2 = glm::vec4(0.f, 2.f/worldYSpan, 0.f, 0.f);
+    col1 = glm::vec4(2.f/worldXSpan, 0.f, 0.f, 0.f);
+    
+    volumeToCanonical = glm::mat4(col1, col2, col3, col4);
 
-    glm::vec3 rightCol(-worldXmidPoint, -worldYmidPoint, 1.f);
-    glm::vec3 midCol(0.f, rasterHeight/worldYSpan, 0.f);
-    glm::vec3 leftCol(rasterWidth/worldXSpan, 0.f, 0.f);
-
-    WtoSCR = glm::mat3(leftCol, midCol, rightCol);
+    cameraTransform = glm::mat4(1);
 }
-inline void rasterizer::draw_point(glm::vec2 worldCoords, output::RGBA32 color)
+void rasterizer::set_camera_transform(glm::vec3 origin, glm::vec3 view, glm::vec3 up)
 {
-    glm::vec3 homogCoords(worldCoords, 1.f);
-    auto screenCoords = WtoSCR * homogCoords;
+    glm::vec4 col4(-origin, 1.f);
+
+    glm::vec3 w(-view);
+    w = glm::normalize(w);
+    
+    glm::vec3 u = glm::cross(up, w);
+    u = glm::normalize(u);
+
+    glm::vec3 v = glm::cross(w, u);
+
+    glm::vec4 col3(u.z, v.z, w.z, 0.f);
+    glm::vec4 col2(u.y, v.y, w.y, 0.f);
+    glm::vec4 col1(u.x, v.x, w.x, 0.f);
+
+    cameraTransform = glm::mat4(col1, col2, col3, col4);
+}
+inline glm::vec3 homogenize(glm::vec4 u)
+{
+    assert(u.w != 0);
+    return glm::vec3(u.x/u.w, u.y/u.w, u.z/u.w);
+}
+
+inline void rasterizer::draw_point(glm::vec3 worldCoords, output::RGBA32 color)
+{
+    glm::vec4 homogCoords(worldCoords, 1.f);
+    glm::vec3 screenCoords = homogenize(canonicalToSCR * volumeToCanonical * homogCoords);
     raster[(uint)screenCoords.y*rasterWidth + (uint)screenCoords.x] = color;
 }
+
 void rasterizer::sample_raster(uint sampleHeight, uint sampleWidth, output::RGBA32* result)
 {    
     for(size_t i = 0; i < sampleHeight; ++i)
@@ -53,10 +89,13 @@ void rasterizer::sample_raster(uint sampleHeight, uint sampleWidth, output::RGBA
             result[i*sampleWidth + j] = raster[vRasterPixel*rasterWidth + hRasterPixel];
         }
 }
-void rasterizer::draw_line_midpoint_world(glm::vec2 worldP1, glm::vec2 worldP2, output::RGBA32 color)
+void rasterizer::draw_line_midpoint_world(glm::vec3 worldP1, glm::vec3 worldP2, output::RGBA32 color)
 {
-    glm::vec<2, uint> p1(WtoSCR * glm::vec3(worldP1, 1.f));
-    glm::vec<2, uint> p2(WtoSCR * glm::vec3(worldP2, 1.f));
+    glm::mat4 WtoSCR = canonicalToSCR*volumeToCanonical;
+
+    glm::vec<2, uint> p1(homogenize(WtoSCR * glm::vec4(worldP1, 1.f)));
+    glm::vec<2, uint> p2(homogenize(WtoSCR * glm::vec4(worldP2, 1.f)));
+
     draw_line_midpoint_scr(p1,  p2, color);
 }
 void rasterizer::clear(output::RGBA32 color)
@@ -126,10 +165,15 @@ inline std::tuple<float, float, float> get_barycentric_coords(glm::vec2 a, glm::
 }
 void rasterizer::draw_triangle_scr(glm::vec<2, int> a, glm::vec<2, int> b, glm::vec<2, int> c, glm::vec<3, glm::vec3> per_vertex_color)
 {
-    for(size_t x = 0; x < rasterWidth; ++x)
-        for(size_t y = 0; y < rasterHeight; ++y)
+    int xMin = std::min(std::min(a.x, b.x), c.x);
+    int xMax = std::max(std::max(a.x, b.x), c.x);
+    int yMin = std::min(std::min(a.y, b.y), c.y);
+    int yMax = std::max(std::max(a.y, b.y), c.y);
+
+    for(size_t x = xMin; x < xMax; ++x)
+        for(size_t y = yMin; y < yMax; ++y)
         {
-            auto bary_coords = get_barycentric_coords(a, b, c, {x, y});
+            auto bary_coords = get_barycentric_coords(a, b, c, {x + 0.5, y + 0.5});
             if (std::get<0>(bary_coords) > 0 && std::get<1>(bary_coords) > 0 && std::get<2>(bary_coords) > 0)
             {
                 glm::vec3 color = per_vertex_color[0] * std::get<0>(bary_coords) + per_vertex_color[1] * std::get<1>(bary_coords) + 

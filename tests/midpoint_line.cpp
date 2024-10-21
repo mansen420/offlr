@@ -25,7 +25,7 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
     if(argc >= 4)
         slices = std::stoi(argv[3]);
 
-    rasterizer R(WND.width, WND.height, {0.f, 1.f}, {0.f, 1.f}, WND.framebuffer);
+    rasterizer R(WND.width, WND.height, {0.f, 1.f}, {0.f, 1.f}, {0, 1.f}, WND.framebuffer);
     R.clear({255, 255, 255, 255}); 
    
     typedef glm::vec<2, int> vec2i;
@@ -56,10 +56,12 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
         ms_timer frameTimer;
         
         float frameRatio = float(frameCount)/slices * 2*3.14;
-        glm::vec2 worldCenter = {0.5, 0.5};
-        R.draw_line_midpoint_world(worldCenter, worldCenter + 0.5f*glm::vec2{0.5*cos(frameRatio), 0.5*sin(frameRatio)},{uint8_t((0.5 * sin(frameRatio) + 0.5) * 255), 0, 0, 255});
+        glm::vec3 worldCenter = {0.0, 0.0, 0.0};
+        R.draw_line_midpoint_world(worldCenter, worldCenter + 0.5f*glm::vec3{0.5*cos(frameRatio), 0.5*sin(frameRatio), 0},{uint8_t((0.5 * sin(frameRatio) + 0.5) * 255), 0, 0, 255});
 
         WND.write_frame();
+        
+        R.clear({255, 255, 255, 255});
 
         std::cout << frameTimer.clock().count() << " ms" << std::endl;
 
