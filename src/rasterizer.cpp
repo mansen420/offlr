@@ -6,7 +6,6 @@
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
-#include <numeric>
 #include <sys/types.h>
 #include <tuple>
 #include <utility>
@@ -29,11 +28,11 @@ ownsRaster(rasterPtr == nullptr ? true : false)
     float worldXSpan = worldX[1] - worldX[0];
     float worldYSpan = worldY[1] - worldY[0];
     float worldZSpan = worldZ[1] - worldZ[0];
-    float worldXmidPoint = (worldX[0] + worldX[1])/2.f;
-    float worldYmidPoint = (worldY[0] + worldY[1])/2.f;
-    float worldZmidPoint = (worldZ[0] + worldZ[1])/2.f;
+    float worldXshift = (worldX[0] + worldX[1])/worldXSpan;
+    float worldYshift = (worldY[0] + worldY[1])/worldYSpan;
+    float worldZshift = (worldZ[0] + worldZ[1])/worldZSpan;
     
-    col4 = glm::vec4(-worldXmidPoint, -worldYmidPoint, -worldZmidPoint, 1.f);
+    col4 = glm::vec4(-worldXshift, -worldYshift, -worldZshift, 1.f);
     col3 = glm::vec4(0.f, 0.f, 2.f/worldZSpan, 0.f);
     col2 = glm::vec4(0.f, 2.f/worldYSpan, 0.f, 0.f);
     col1 = glm::vec4(2.f/worldXSpan, 0.f, 0.f, 0.f);
@@ -46,11 +45,9 @@ void rasterizer::set_camera_transform(glm::vec3 origin, glm::vec3 view, glm::vec
 {
     glm::vec4 col4(-origin, 1.f);
 
-    glm::vec3 w(-view);
-    w = glm::normalize(w);
+    glm::vec3 w(glm::normalize(-view));
     
-    glm::vec3 u = glm::cross(up, w);
-    u = glm::normalize(u);
+    glm::vec3 u = glm::cross(glm::normalize(up), w);
 
     glm::vec3 v = glm::cross(w, u);
 
@@ -89,19 +86,20 @@ void rasterizer::sample_raster(uint sampleHeight, uint sampleWidth, output::RGBA
             result[i*sampleWidth + j] = raster[vRasterPixel*rasterWidth + hRasterPixel];
         }
 }
+
+glm::vec<2, int> rasterizer::toSCR(glm::vec3 u){return homogenize(canonicalToSCR*volumeToCanonical*cameraTransform*glm::vec4(u, 1.f));}
+
 void rasterizer::draw_line_midpoint_world(glm::vec3 worldP1, glm::vec3 worldP2, output::RGBA32 color)
 {
-    glm::mat4 WtoSCR = canonicalToSCR*volumeToCanonical;
+    glm::mat4 WtoSCR = canonicalToSCR*volumeToCanonical*cameraTransform;
 
     glm::vec<2, uint> p1(homogenize(WtoSCR * glm::vec4(worldP1, 1.f)));
     glm::vec<2, uint> p2(homogenize(WtoSCR * glm::vec4(worldP2, 1.f)));
 
     draw_line_midpoint_scr(p1,  p2, color);
 }
-void rasterizer::clear(output::RGBA32 color)
-{
-    std::fill(raster, raster + rasterHeight*rasterWidth, color);
-}
+void rasterizer::clear(output::RGBA32 color){ std::fill(raster, raster + rasterHeight*rasterWidth, color); }
+
 void rasterizer::draw_line_midpoint_scr(glm::vec<2, int> P1, glm::vec<2, int> P2, output::RGBA32 color = {255, 255, 255, 255})
 {   
     int dx = std::abs(P2.x - P1.x), dy = std::abs(P2.y - P1.y);
@@ -159,8 +157,8 @@ void rasterizer::RGB_test()
 inline std::tuple<float, float, float> get_barycentric_coords(glm::vec2 a, glm::vec2 b, glm::vec2 c, glm::vec2 P)
 {
     float alpha = ((b.y - c.y)*P.x + (c.x - b.x)*P.y + b.x*c.y - c.x*b.y)/((b.y - c.y)*a.x + (c.x - b.x)*a.y + b.x*c.y - c.x*b.y);
-    float beta  = ((a.y - c.y)*P.x + (c.x - a.x)*P.y + a.x*c.y - c.x*a.y)/((a.y - c.y)*b.x + (c.x - a.x)*b.y + a.x*c.y - c.x*a.y);
-    float gamma = ((a.y - b.y)*P.x + (a.x - b.x)*P.y + a.x*b.y - a.x*b.y)/((a.y - b.y)*c.x + (a.x - b.x)*c.y + a.x*b.y - a.x*b.y);
+    float beta  = ((c.y - a.y)*P.x + (a.x - c.x)*P.y + a.y*c.x - c.y*a.x)/((c.y - a.y)*b.x + (a.x - c.x)*b.y + a.y*c.x - c.y*a.x);
+    float gamma = ((a.y - b.y)*P.x + (b.x - a.x)*P.y + a.x*b.y - a.y*b.x)/((a.y - b.y)*c.x + (b.x - a.x)*c.y + a.x*b.y - a.y*b.x);
     return std::make_tuple(alpha, beta, gamma);
 }
 void rasterizer::draw_triangle_scr(glm::vec<2, int> a, glm::vec<2, int> b, glm::vec<2, int> c, glm::vec<3, glm::vec3> per_vertex_color)

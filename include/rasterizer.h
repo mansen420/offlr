@@ -33,6 +33,8 @@ public:
     void draw_triangle_scr(glm::vec<2, int> a, glm::vec<2, int> b, glm::vec<2, int> c, glm::vec<3, glm::vec3> per_vertex_color);
     void RGB_test();
     
+    glm::vec<2, int> toSCR(glm::vec3 u);
+
     void set_camera_transform(glm::vec3 origin, glm::vec3 view_direction, glm::vec3 up_direction);
 
     ~rasterizer();

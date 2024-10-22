@@ -56,7 +56,7 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
         ms_timer frameTimer;
         
         float frameRatio = float(frameCount)/slices * 2*3.14;
-        glm::vec3 worldCenter = {0.0, 0.0, 0.0};
+        glm::vec3 worldCenter = {0.5, 0.5, 0.5};
         R.draw_line_midpoint_world(worldCenter, worldCenter + 0.5f*glm::vec3{0.5*cos(frameRatio), 0.5*sin(frameRatio), 0},{uint8_t((0.5 * sin(frameRatio) + 0.5) * 255), 0, 0, 255});
 
         WND.write_frame();
