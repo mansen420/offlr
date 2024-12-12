@@ -1,5 +1,5 @@
 #include "output.h"
-#include  "rasterizer.h"
+#include "rasterizer.h"
 #include "timer.h"
 
 #include <iostream>
@@ -7,6 +7,8 @@
 
 int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
 {
+    using namespace AiCo;
+
     output::init();
     rasterizer R(std::stoi(argv[1]), std::stoi(argv[2]), {0.f, 1.f}, {0.f, 1.f});
     output::window WND("title", 0, 0, 1280, 720);

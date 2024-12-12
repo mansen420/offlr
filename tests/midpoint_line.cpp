@@ -12,6 +12,8 @@
 
 int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
 {
+    using namespace AiCo;
+
     output::init();
     
     uint w = 1280, h = 720;
@@ -29,7 +31,7 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
     R.clear({255, 255, 255, 255}); 
    
     typedef glm::vec<2, int> vec2i;
-    output::RGBA32 black = {0,0,0,255};
+    RGBA32 black = {0,0,0,255};
     vec2i center {R.rasterWidth/2, R.rasterHeight/2};
     
     R.draw_line_midpoint_scr({0,0}, {R.rasterWidth, R.rasterHeight}, black);

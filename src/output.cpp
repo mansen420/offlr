@@ -1,28 +1,25 @@
-#include <SDL_pixels.h>
-#include <SDL_render.h>
-#include <SDL_video.h>
 #include <stdexcept>
 #include "SDL.h"
 #include "output.h"
 
-void output::init()
+void AiCo::output::init()
 {
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
         throw std::runtime_error("Failed to init SDL");
 }
-void output::terminate()
+void AiCo::output::terminate()
 {
     SDL_Quit();
 }
-output::window::window(const char* title, uint x, uint y, uint width, uint height) : height(height), width(width)
+AiCo::output::window::window(const char* title, uint x, uint y, uint width, uint height) : height(height), width(width)
 {
     auto res = SDL_CreateWindowAndRenderer(width, height, 0, &handle, &renderer);
     if(res != 0)
         throw std::runtime_error("WINDOW ERROR");
     frame = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING, width, height);
-    framebuffer = new output::RGBA32[height * width];
+    framebuffer = new RGBA32[height * width];
 }
-void output::window::write_frame()
+void AiCo::output::window::write_frame()
 {
     void* texPtr;
     int texPitch;
@@ -35,7 +32,7 @@ void output::window::write_frame()
     SDL_RenderCopy(renderer, frame, nullptr, nullptr);
     SDL_RenderPresent(renderer);
 }
-output::window::~window()
+AiCo::output::window::~window()
 {
     SDL_DestroyTexture(frame);
     SDL_DestroyWindow(handle);

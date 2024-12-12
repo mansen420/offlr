@@ -4,6 +4,7 @@
 #include "output.h"
 #include <algorithm>
 #include <cassert>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <sys/types.h>
@@ -11,12 +12,12 @@
 #include <utility>
 #include "rasterizer.h"
 
-rasterizer::rasterizer(uint rasterWidth, uint rasterHeight, glm::vec2 worldX, glm::vec2 worldY, glm::vec2 worldZ, output::RGBA32* rasterPtr) 
-: raster(rasterPtr == nullptr ? new output::RGBA32[rasterWidth * rasterHeight] : rasterPtr), rasterWidth(rasterWidth), rasterHeight(rasterHeight), 
+AiCo::rasterizer::rasterizer(uint rasterWidth, uint rasterHeight, glm::vec2 worldX, glm::vec2 worldY, glm::vec2 worldZ, RGBA32* rasterPtr) 
+: raster(rasterPtr == nullptr ? new RGBA32[rasterWidth * rasterHeight] : rasterPtr), rasterWidth(rasterWidth), rasterHeight(rasterHeight), 
 ownsRaster(rasterPtr == nullptr ? true : false)
 {
     if(ownsRaster)
-        std::fill(raster, raster + rasterHeight*rasterWidth, output::RGBA32{255, 255, 255, 255});
+        std::fill(raster, raster + rasterHeight*rasterWidth, RGBA32{255, 255, 255, 255});
 
     glm::vec4 col4(float(rasterWidth - 1)/2.f, float(rasterHeight - 1)/2.f, 0.f, 1.f);
     glm::vec4 col3(0.f, 0.f, 1.f, 0.f);
@@ -39,9 +40,16 @@ ownsRaster(rasterPtr == nullptr ? true : false)
     
     volumeToCanonical = glm::mat4(col1, col2, col3, col4);
 
+    col4 = {0.f, 0.f, -worldZ[1] * worldZ[0], 0.f};
+    col3 = {0.f, 0.f, worldZ[0] + worldZ[1], 1.f};
+    col2 = {0.f, worldZ[0], 0.f, 0.f};
+    col1 = {worldZ[0], 0.f, 0.f, 0.f};
+
+    projectionTransform = glm::mat4(col1, col2, col3, col4);
+
     cameraTransform = glm::mat4(1);
 }
-void rasterizer::set_camera_transform(glm::vec3 origin, glm::vec3 view, glm::vec3 up)
+void AiCo::rasterizer::set_camera_transform(glm::vec3 origin, glm::vec3 view, glm::vec3 up)
 {
     glm::vec4 col4(-origin, 1.f);
 
@@ -59,18 +67,18 @@ void rasterizer::set_camera_transform(glm::vec3 origin, glm::vec3 view, glm::vec
 }
 inline glm::vec3 homogenize(glm::vec4 u)
 {
-    assert(u.w != 0);
+    assert(fabs(1 - u.w) > 1e-12);
     return glm::vec3(u.x/u.w, u.y/u.w, u.z/u.w);
 }
 
-inline void rasterizer::draw_point(glm::vec3 worldCoords, output::RGBA32 color)
+inline void AiCo::rasterizer::draw_point(glm::vec3 worldCoords, RGBA32 color)
 {
     glm::vec4 homogCoords(worldCoords, 1.f);
     glm::vec3 screenCoords = homogenize(canonicalToSCR * volumeToCanonical * homogCoords);
     raster[(uint)screenCoords.y*rasterWidth + (uint)screenCoords.x] = color;
 }
 
-void rasterizer::sample_raster(uint sampleHeight, uint sampleWidth, output::RGBA32* result)
+void AiCo::rasterizer::sample_raster(uint sampleHeight, uint sampleWidth, RGBA32* result)
 {    
     for(size_t i = 0; i < sampleHeight; ++i)
         for(size_t j = 0; j < sampleWidth; ++j)
@@ -87,20 +95,20 @@ void rasterizer::sample_raster(uint sampleHeight, uint sampleWidth, output::RGBA
         }
 }
 
-glm::vec<2, int> rasterizer::toSCR(glm::vec3 u){return homogenize(canonicalToSCR*volumeToCanonical*cameraTransform*glm::vec4(u, 1.f));}
+glm::vec<2, int> AiCo::rasterizer::toSCR(glm::vec3 u){return homogenize(canonicalToSCR*volumeToCanonical*projectionTransform*cameraTransform*glm::vec4(u, 1.f));}
 
-void rasterizer::draw_line_midpoint_world(glm::vec3 worldP1, glm::vec3 worldP2, output::RGBA32 color)
+void AiCo::rasterizer::draw_line_midpoint_world(glm::vec3 worldP1, glm::vec3 worldP2, RGBA32 color)
 {
-    glm::mat4 WtoSCR = canonicalToSCR*volumeToCanonical*cameraTransform;
+    glm::mat4 WtoSCR = canonicalToSCR*volumeToCanonical*projectionTransform*cameraTransform;
 
     glm::vec<2, uint> p1(homogenize(WtoSCR * glm::vec4(worldP1, 1.f)));
     glm::vec<2, uint> p2(homogenize(WtoSCR * glm::vec4(worldP2, 1.f)));
 
     draw_line_midpoint_scr(p1,  p2, color);
 }
-void rasterizer::clear(output::RGBA32 color){ std::fill(raster, raster + rasterHeight*rasterWidth, color); }
+void AiCo::rasterizer::clear(RGBA32 color){ std::fill(raster, raster + rasterHeight*rasterWidth, color); }
 
-void rasterizer::draw_line_midpoint_scr(glm::vec<2, int> P1, glm::vec<2, int> P2, output::RGBA32 color = {255, 255, 255, 255})
+void AiCo::rasterizer::draw_line_midpoint_scr(glm::vec<2, int> P1, glm::vec<2, int> P2, RGBA32 color = {255, 255, 255, 255})
 {   
     int dx = std::abs(P2.x - P1.x), dy = std::abs(P2.y - P1.y);
     
@@ -145,12 +153,12 @@ void rasterizer::draw_line_midpoint_scr(glm::vec<2, int> P1, glm::vec<2, int> P2
             raster[y*rasterWidth + x] = color;
     }
 }
-void rasterizer::RGB_test()
+void AiCo::rasterizer::RGB_test()
 {
     for (size_t i = 0; i < rasterHeight; ++i)
         for (size_t j = 0; j < rasterWidth; ++j)
         {
-            output::RGBA32 C = {uint8_t(255 * (float(i)/rasterHeight)), 0, uint8_t(255 * (float(j)/rasterWidth)), 0};
+            RGBA32 C = {uint8_t(255 * (float(i)/rasterHeight)), 0, uint8_t(255 * (float(j)/rasterWidth)), 0};
             this->raster[i*rasterWidth + j] = C;
         }
 }
@@ -161,7 +169,7 @@ inline std::tuple<float, float, float> get_barycentric_coords(glm::vec2 a, glm::
     float gamma = ((a.y - b.y)*P.x + (b.x - a.x)*P.y + a.x*b.y - a.y*b.x)/((a.y - b.y)*c.x + (b.x - a.x)*c.y + a.x*b.y - a.y*b.x);
     return std::make_tuple(alpha, beta, gamma);
 }
-void rasterizer::draw_triangle_scr(glm::vec<2, int> a, glm::vec<2, int> b, glm::vec<2, int> c, glm::vec<3, glm::vec3> per_vertex_color)
+void AiCo::rasterizer::draw_triangle_scr(glm::vec<2, int> a, glm::vec<2, int> b, glm::vec<2, int> c, glm::vec<3, glm::vec3> per_vertex_color)
 {
     int xMin = std::min(std::min(a.x, b.x), c.x);
     int xMax = std::max(std::max(a.x, b.x), c.x);
@@ -176,11 +184,14 @@ void rasterizer::draw_triangle_scr(glm::vec<2, int> a, glm::vec<2, int> b, glm::
             {
                 glm::vec3 color = per_vertex_color[0] * std::get<0>(bary_coords) + per_vertex_color[1] * std::get<1>(bary_coords) + 
                 per_vertex_color[2] * std::get<2>(bary_coords);
+
+                assert(!(y > rasterHeight || x > rasterWidth) || (x < 0 || y < 0));
+
                 raster[y*rasterWidth + x] = {uint8_t(color.r * 255), uint8_t(color.g * 255), uint8_t(color.b * 255), 255};
             }
         }
 }
-rasterizer::~rasterizer()
+AiCo::rasterizer::~rasterizer()
 {
     if(ownsRaster)
         delete [] raster;
