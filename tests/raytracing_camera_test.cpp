@@ -19,12 +19,12 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
     output::init();
     int width = std::stoi(argv[1]), height = std::stoi(argv[2]);
 
-    camera cam(1.f, width, height);
+    camera cam(2.f, width, height);
     output::window WND("title", 0, 0, width, height);
     
     raster framebuffer(WND.framebuffer, WND.width, WND.height);
         
-    sphere ball(1.0, {0.0f, 0.0f, 2.f});
+    sphere ball(0.5, {0.2f, 0.5f, -2.f});
 
     bool quit = false;
     while(!quit)

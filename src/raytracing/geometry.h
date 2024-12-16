@@ -37,11 +37,10 @@ public:
         sphere() = delete;
         sphere(float radius, glm::vec3 center) : radius(radius), center(center) {}
 
-
         virtual bool intersects(const ray& R, float tmin, float tmax) override
         {
             //just copied this code from RT in one weekend. should work
-            glm::vec3 oc = R.origin - center;
+            glm::vec3 oc = center - R.origin;
             auto a = glm::dot(R.dir, R.dir);
             auto h = glm::dot(R.dir, oc);
             auto c = glm::dot(oc, oc) - radius*radius;
