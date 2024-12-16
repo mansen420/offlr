@@ -4,6 +4,7 @@
 #include "timer.h"
 #include "raster.h"
 #include "utils.h"
+#include "raytracing/geometry.h"
 
 #include <cstddef>
 #include <iostream>
@@ -22,6 +23,8 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
     output::window WND("title", 0, 0, width, height);
     
     raster framebuffer(WND.framebuffer, WND.width, WND.height);
+        
+    sphere ball(1.0, {0.0f, 0.0f, 2.f});
 
     bool quit = false;
     while(!quit)
@@ -37,7 +40,13 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
             for(size_t j = 0; j < height; ++j)
             {
                 ray sampler = cam.samplePixel(i, j);
-                framebuffer.at(i, j) = colorftoRGBA32(rayGradient(sampler));
+                if(ball.intersects(sampler, 0.f, 10.f))
+                {
+                    auto normal = 0.5f * ball.lastIntersect.N + glm::vec3(0.5);
+                    framebuffer.at(i, j) = colorftoRGBA32(normal);
+                }
+                else
+                    framebuffer.at(i, j) = colorftoRGBA32(rayGradient(sampler));
             }
         WND.write_frame();
 

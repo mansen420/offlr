@@ -1,3 +1,5 @@
+#pragma once
+
 #include "glm/fwd.hpp"
 #include "glm/geometric.hpp"
 #include "ray.h"
@@ -39,10 +41,10 @@ public:
         virtual bool intersects(const ray& R, float tmin, float tmax) override
         {
             //just copied this code from RT in one weekend. should work
-            glm::vec3 oc = center - R.origin;
-            auto a = R.dir.length() * R.dir.length();
+            glm::vec3 oc = R.origin - center;
+            auto a = glm::dot(R.dir, R.dir);
             auto h = glm::dot(R.dir, oc);
-            auto c = oc.length()*oc.length() - radius*radius;
+            auto c = glm::dot(oc, oc) - radius*radius;
 
             auto discriminant = h*h - a*c;
             if (discriminant < 0)
@@ -65,4 +67,3 @@ public:
         }
     };
 };
-
