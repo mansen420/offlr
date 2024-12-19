@@ -8,6 +8,7 @@
 
 #include <cstddef>
 #include <iostream>
+#include <memory>
 #include <string>
 
 AiCo::color3f rayGradient(AiCo::ray sample);
@@ -25,6 +26,9 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
     raster framebuffer(WND.framebuffer, WND.width, WND.height);
         
     sphere ball(0.5, {0.2f, 0.5f, -2.f});
+    nearest_hit_structure balls;
+    balls.list.push_back(std::make_shared<sphere>(sphere(0.5f, {0.2f, 0.5f, -2.f})));
+    balls.list.push_back(std::make_shared<sphere>(sphere(20.f, {0.0f, -20.5f, -2.f})));
 
     bool quit = false;
     while(!quit)
@@ -40,9 +44,9 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
             for(size_t j = 0; j < height; ++j)
             {
                 ray sampler = cam.samplePixel(i, j);
-                if(ball.intersects(sampler, 0.f, 10.f))
+                if(balls.intersects(sampler, 0.f, 10.f))
                 {
-                    auto normal = 0.5f * ball.lastIntersect.N + glm::vec3(0.5);
+                    auto normal = 0.5f * balls.lastIntersect.N + glm::vec3(0.5);
                     framebuffer.at(i, j) = colorftoRGBA32(normal);
                 }
                 else

@@ -6,12 +6,14 @@
 
 #include <cfloat>
 #include <limits.h>
+#include <memory.h>
+#include <memory>
 
 namespace AiCo 
 {
     class geometry
     {
-public:
+    public:
         struct intersection_t
         {
             intersection_t(const ray& R, const glm::vec3& outwardNormal, const glm::vec3& P, float t) : 
@@ -24,20 +26,20 @@ public:
             bool frontFace;
         };
 
-        intersection_t lastIntersect;
-        virtual bool intersects(const ray& R, float tmin, float tmax) = 0;
+        mutable intersection_t lastIntersect;
+        virtual bool intersects(const ray& R, float tmin, float tmax)const = 0;
     };
 
     class sphere : public geometry
     {
-public:
+    public:
         const float radius;
         const glm::vec3 center;
 
         sphere() = delete;
         sphere(float radius, glm::vec3 center) : radius(radius), center(center) {}
 
-        virtual bool intersects(const ray& R, float tmin, float tmax) override
+        virtual bool intersects(const ray& R, float tmin, float tmax)const override
         {
             //just copied this code from RT in one weekend. should work
             glm::vec3 oc = center - R.origin;
@@ -63,6 +65,25 @@ public:
             lastIntersect = intersection_t(R, (P - center)/radius, P, root);
 
             return true;
+        }
+    };
+
+    class nearest_hit_structure : public geometry
+    {
+    public:
+        std::vector<std::shared_ptr<geometry>> list;
+
+        virtual bool intersects(const ray& R, float tmin, float tmax)const override
+        {
+            float closestIntersect = tmin;
+            for(const auto& obj : list)
+                if(obj->intersects(R, closestIntersect, tmax))
+                {
+                    this->lastIntersect = obj->lastIntersect;
+                    closestIntersect = this->lastIntersect.t;
+                    return true;
+                }
+            return false;
         }
     };
 };

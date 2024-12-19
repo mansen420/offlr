@@ -3,12 +3,6 @@
 
 namespace AiCo
 {
-
-    /**
-     * @class raster
-     * @brief Contains raster or part of a raster image
-     *
-     */
     class raster 
     {
         bool ownsData = true;
