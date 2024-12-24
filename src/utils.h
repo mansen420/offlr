@@ -23,13 +23,20 @@ namespace AiCo
     {
     public:
         const float min, max;
-        interval(float min, float max) : min(min), max(max){}
-        [[nodiscard]] float span(){return max - min;}
-        [[nodiscard]] bool contains(float x){return x >= min && x <= max;}
-        [[nodiscard]] bool cntains_proper(float x){return x > min && x < max;}
-        [[nodiscard]] float clamp(float x){return std::clamp(x, min, max);}
+
+        [[nodiscard]] interval(float min, float max) : min(min), max(max){}
+        [[nodiscard]] float span()const{return max - min;}
+        [[nodiscard]] bool contains(float x)const{return x >= min && x <= max;}
+        [[nodiscard]] bool cntains_proper(float x)const{return x > min && x < max;}
+        [[nodiscard]] float clamp(float x)const{return std::clamp(x, min, max);}
+
         static const interval EMPTY, NORM, UNIVERSE;
+
+        interval operator*(float x)const{return interval(x * min, x * max);}
+        interval operator/(float x)const{return interval(min / x, max / x);}
     };
+    inline interval operator*(float x, const interval u){return u * x;}
+    inline interval operator/(float x, const interval u){return u / x;}
 
     const interval interval::EMPTY = interval(+INF, -INF);
     const interval interval::UNIVERSE = interval(-INF, +INF);
