@@ -12,11 +12,11 @@ namespace AiCo
     {
     public:
         const camera view;
-        int samplesPerPixel;
+        uint samplesPerPixel;
         color3f (*trace) (const ray& R);
         raster image;
 
-        renderer(camera view, int samplesPerPixel, int width, int height, color3f (*trace) (const ray& R), RGBA32* data = nullptr) : 
+        renderer(camera view, uint samplesPerPixel, int width, int height, color3f (*trace) (const ray& R), RGBA32* data = nullptr) : 
         view(view), samplesPerPixel(samplesPerPixel), trace(trace), image(width, height, data) {}
 
         void render()
