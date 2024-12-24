@@ -1,18 +1,21 @@
 #include "format.h"
 #include "raytracing/camera.h"
 #include "output.h"
+#include "raytracing/ray.h"
 #include "timer.h"
 #include "raster.h"
 #include "utils.h"
 #include "raytracing/geometry.h"
+#include "raytracing/renderer.h"
 
 #include <cstddef>
 #include <iostream>
 #include <memory>
 #include <string>
 
-AiCo::color3f rayGradient(AiCo::ray sample);
+AiCo::color3f rayGradient(const AiCo::ray& sample);
 
+AiCo::nearest_hit_structure balls;
 int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
 {
     using namespace AiCo;
@@ -26,10 +29,17 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
     raster framebuffer(WND.framebuffer, WND.width, WND.height);
         
     sphere ball(0.5, {0.2f, 0.5f, -2.f});
-    nearest_hit_structure balls;
     balls.list.push_back(std::make_shared<sphere>(sphere(0.5f, {0.2f, 0.5f, -2.f})));
     balls.list.push_back(std::make_shared<sphere>(sphere(20.f, {0.0f, -20.5f, -2.f})));
-
+    
+    color3f (* trace) (const ray& sampler) = [](const ray& sampler) -> color3f
+                {
+                    if(balls.intersects(sampler, 0.f, 10.f))
+                        return 0.5f * balls.lastIntersect.N + glm::vec3(0.5);
+                    else
+                        return rayGradient(sampler);
+                };
+    renderer R(cam, 1, WND.width, WND.height, trace, WND.framebuffer);
     bool quit = false;
     while(!quit)
     {
@@ -39,19 +49,9 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
                 quit = true;
         
         ms_timer frameTimer;
-        
-        for(size_t i = 0; i < width; ++i)
-            for(size_t j = 0; j < height; ++j)
-            {
-                ray sampler = cam.samplePixel(i, j);
-                if(balls.intersects(sampler, 0.f, 10.f))
-                {
-                    auto normal = 0.5f * balls.lastIntersect.N + glm::vec3(0.5);
-                    framebuffer.at(i, j) = colorftoRGBA32(normal);
-                }
-                else
-                    framebuffer.at(i, j) = colorftoRGBA32(rayGradient(sampler));
-            }
+
+        R.render();
+
         WND.write_frame();
 
         std::cout << frameTimer.clock().count() << " ms" << std::endl;
@@ -60,7 +60,7 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
     return 0;
 }
 
-AiCo::color3f rayGradient(AiCo::ray sample)
+AiCo::color3f rayGradient(const AiCo::ray& sample)
 {
     AiCo::color3f blue = {0.25, 0.4, 0.8};
     AiCo::color3f white = {1, 1, 1};
