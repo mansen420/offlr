@@ -16,11 +16,12 @@
 #include <memory>
 #include <string>
 
-AiCo::color3f rayGradient(const AiCo::ray& sample);
+AiCo::color3f rayGradient(const AiCo::RT::ray& sample);
 
 int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
 {
     using namespace AiCo;
+    using namespace RT;
 
     output::init();
     int width = std::stoi(argv[1]), height = std::stoi(argv[2]);
@@ -36,8 +37,9 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
     
     auto trace = [&](const ray& sampler) -> color3f
                 {
-                    if(balls.intersects(sampler, 0.f, 10.f))
-                        return 0.5f * balls.lastIntersect.N + glm::vec3(0.5);
+                    auto insct = balls.testIntersect(sampler, {0.f, 10.f});
+                    if(insct.has_value())
+                        return 0.5f * insct->N + glm::vec3(0.5);
                     else
                         return rayGradient(sampler);
                 };
@@ -50,12 +52,28 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
                         recursionDepth = 0;
                         return {0.f, 0.f, 0.f};
                     }
-                    if(balls.intersects(sampler, 0.0001f, 10.f))
-                        return 0.5f * trace_diffuse(randvec_on_hemisphere(balls.lastIntersect.N));
+                    auto insct = balls.testIntersect(sampler, {0.0001f, 10.f});
+                    if(insct.has_value())
+                        return 0.5f * trace_diffuse(ray(randvec_on_hemisphere(insct->N), insct->P));
                     else
                         return rayGradient(sampler);
                 };
-    renderer R(cam, 50, trace_diffuse);
+    std::function<color3f(const ray&)> trace_diffuse_lambertian = [&](const ray& sampler) -> color3f
+                {
+                    recursionDepth++;
+                    if(recursionDepth >= maxDepth)
+                    {
+                        recursionDepth = 0;
+                        return {0.f, 0.f, 0.f};
+                    }
+                    
+                    auto insct = balls.testIntersect(sampler, {0.0001f, 10.f});
+                    if(insct.has_value())
+                        return 0.5f * trace_diffuse(ray(insct->N + randvec_on_unit_sphere(), insct->P));
+                    else
+                        return rayGradient(sampler);
+                };
+    renderer R(cam, 50, trace_diffuse_lambertian);
     
     R(WNDR.framebuffer);
     
@@ -71,7 +89,7 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
 
         micro_timer frameTimer;
 
-        R.sample(WND.framebuffer);
+        R.render(WND.framebuffer);
 
 
         WNDR.write_frame();
@@ -85,7 +103,7 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
     return 0;
 }
 
-AiCo::color3f rayGradient(const AiCo::ray& sample)
+AiCo::color3f rayGradient(const AiCo::RT::ray& sample)
 {
     AiCo::color3f blue = {0.25, 0.4, 0.8};
     AiCo::color3f white = {1, 1, 1};

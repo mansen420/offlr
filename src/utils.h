@@ -1,10 +1,12 @@
 #pragma once
 
+#include "glm/detail/qualifier.hpp"
 #include "glm/geometric.hpp"
 #include "glm/glm.hpp"
 
 #include <cstdlib>
 #include <limits>
+#include <type_traits>
 
 #include "interval.h"
 
@@ -43,4 +45,6 @@ namespace AiCo
         else
             return -candidate;
     }
+    template<glm::length_t len>
+    inline bool nearzero_vec(glm::vec<len, float> u, float precision = 1e-8){return interval(-precision, precision).contains(u);}
 }
