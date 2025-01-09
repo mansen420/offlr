@@ -57,7 +57,8 @@ namespace AiCo
         static const interval EMPTY, NORM, CANON, UNIVERSE;
         
         interval operator+(float x)const{return {min + x, max + x};}
-        interval operator-()const{return {-min, -max};}
+        // symmetric inverse interval, bad idea?
+        interval operator-()const{return {-max, -min};}
         interval operator-(float x)const{return (*this) + -x;}
         
         interval operator*(float x)const{return interval(x * min, x * max);}
