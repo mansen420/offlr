@@ -1,13 +1,12 @@
 #pragma once
 
-#include "format.h"
 #include "SDL.h"
+#include "raster.h"
 
 namespace AiCo
 {
     namespace output
     {
-
         void init();
         void terminate();
         class window
@@ -16,8 +15,7 @@ namespace AiCo
             SDL_Renderer* renderer;
             SDL_Texture* frame;
     public:
-            uint height, width;
-            RGBA32* framebuffer;
+            raster framebuffer;
             window(const char* title, uint x, uint y, uint width, uint height);
             void write_frame();
             ~window();

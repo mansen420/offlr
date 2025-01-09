@@ -1,7 +1,9 @@
 #pragma once
 
 #include "format.h"
+#include <cassert>
 #include <cstddef>
+#include <cstring>
 
 namespace AiCo
 {
@@ -10,6 +12,8 @@ namespace AiCo
         bool ownsData = true;
 public:
         raster() = delete;
+        raster(const raster& other) = delete;
+        raster(raster&& other) = delete;
 
         raster(int width, int height, RGBA32* data = nullptr) : ownsData(data==nullptr ? true : false), width(width), height(height), 
         data(data == nullptr ? new RGBA32[width*height] : data) {}
@@ -19,7 +23,11 @@ public:
         const int width, height;
         RGBA32* const data = nullptr;
         
-        inline RGBA32& at(size_t x, size_t y){return data[y*width + x];}
+        inline RGBA32& at(size_t x, size_t y)
+        {
+            assert(x < width && y < height);
+            return data[y*width + x];
+        }
 
         ~raster(){if (ownsData) {delete [] data;}}
     };

@@ -33,8 +33,8 @@ namespace AiCo
     class sphere : public geometry
     {
     public:
-        const float radius;
-        const glm::vec3 center;
+        float radius;
+        glm::vec3 center;
 
         sphere() = delete;
         sphere(float radius, glm::vec3 center) : radius(radius), center(center) {}

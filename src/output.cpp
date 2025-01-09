@@ -11,20 +11,19 @@ void AiCo::output::terminate()
 {
     SDL_Quit();
 }
-AiCo::output::window::window(const char* title, uint x, uint y, uint width, uint height) : height(height), width(width)
+AiCo::output::window::window(const char* title, uint x, uint y, uint width, uint height) : framebuffer(width, height)
 {
     auto res = SDL_CreateWindowAndRenderer(width, height, 0, &handle, &renderer);
     if(res != 0)
         throw std::runtime_error("WINDOW ERROR");
     frame = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING, width, height);
-    framebuffer = new RGBA32[height * width];
 }
 void AiCo::output::window::write_frame()
 {
     void* texPtr;
     int texPitch;
     SDL_LockTexture(frame, nullptr, &texPtr, &texPitch);
-    memcpy(texPtr, framebuffer, texPitch * height);
+    memcpy(texPtr, framebuffer.data, texPitch * framebuffer.height);
     SDL_UnlockTexture(frame);
 
     SDL_RenderClear(renderer);
@@ -36,5 +35,4 @@ AiCo::output::window::~window()
 {
     SDL_DestroyTexture(frame);
     SDL_DestroyWindow(handle);
-    delete [] framebuffer;
 }

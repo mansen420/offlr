@@ -21,13 +21,13 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
             if(e.type == SDL_QUIT)
                 quit = true;
         
-        ms_timer frameTimer;
+        micro_timer frameTimer;
 
         R.RGB_test();
-        R.sample_raster(WND.height, WND.width, WND.framebuffer); 
+        R.sample_raster(WND.framebuffer.height, WND.framebuffer.width, WND.framebuffer.data); 
         WND.write_frame();
 
-        std::cout << frameTimer.clock().count() << " ms" << std::endl;
+        std::cout << frameTimer.clock().count()/1000.f << " ms" << std::endl;
     }
     output::terminate();
     return 0;

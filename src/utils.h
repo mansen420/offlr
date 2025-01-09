@@ -1,14 +1,15 @@
 #pragma once
 
+#include "glm/geometric.hpp"
 #include "glm/glm.hpp"
 
-#include <algorithm>
 #include <cstdlib>
 #include <limits>
 
+#include "interval.h"
+
 namespace AiCo 
 {
-    constexpr float INF = std::numeric_limits<float>::infinity();
     constexpr float PI = 3.1415926535897932385;
 
     constexpr inline float degrees_to_radians(float degrees){return degrees * PI / 180.0;}  
@@ -16,29 +17,30 @@ namespace AiCo
     template<glm::length_t L, typename T>
     [[nodiscard]] glm::vec<L, T> lerp (float alpha, glm::vec<L, T> a, glm::vec<L, T> b) {return (1-alpha)*a + (alpha)*b;}
     
+    /**
+     * @brief Returns random number in [0, 1[
+     */
     inline float rand(){return std::rand()/(RAND_MAX + 1.f);}
-    inline float rand(float min, float max){return min + (max - min)*AiCo::rand();}
+    inline float rand(interval K){return K.min + (K.max - K.min)*AiCo::rand();}
 
-    class interval
+    inline glm::vec3 randvec(){return glm::vec3(rand(), rand(), rand());}
+    inline glm::vec3 randvec(interval K){return glm::vec3(rand(K), rand(K), rand(K));}
+    
+    inline glm::vec3 randvec_on_unit_sphere()
     {
-    public:
-        const float min, max;
-
-        [[nodiscard]] interval(float min, float max) : min(min), max(max){}
-        [[nodiscard]] float span()const{return max - min;}
-        [[nodiscard]] bool contains(float x)const{return x >= min && x <= max;}
-        [[nodiscard]] bool cntains_proper(float x)const{return x > min && x < max;}
-        [[nodiscard]] float clamp(float x)const{return std::clamp(x, min, max);}
-
-        static const interval EMPTY, NORM, UNIVERSE;
-
-        interval operator*(float x)const{return interval(x * min, x * max);}
-        interval operator/(float x)const{return interval(min / x, max / x);}
-    };
-    inline interval operator*(float x, const interval u){return u * x;}
-    inline interval operator/(float x, const interval u){return u / x;}
-
-    const interval interval::EMPTY = interval(+INF, -INF);
-    const interval interval::UNIVERSE = interval(-INF, +INF);
-    const interval interval::NORM = interval(0.f, 1.f);
+        while (true)
+        {
+            auto candidate = randvec({-1.f, 1.f});
+            if (glm::length(candidate) <= 1.f && glm::length(candidate) > std::numeric_limits<float>::min())
+                return glm::normalize(candidate);
+        }
+    }
+    inline glm::vec3 randvec_on_hemisphere(glm::vec3 surface_outward_normal)
+    {
+        auto candidate = randvec_on_unit_sphere();
+        if(glm::dot(candidate, surface_outward_normal) > 0.f)
+            return candidate;
+        else
+            return -candidate;
+    }
 }

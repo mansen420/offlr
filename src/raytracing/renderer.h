@@ -5,6 +5,7 @@
 #include "raster.h"
 #include "raytracing/ray.h"
 #include <cstddef>
+#include <functional>
 
 namespace AiCo 
 {
@@ -13,13 +14,18 @@ namespace AiCo
     public:
         const camera view;
         uint samplesPerPixel;
-        color3f (*trace) (const ray& R);
-        raster image;
+        std::function<color3f(const ray& R)> trace;
 
-        renderer(camera view, uint samplesPerPixel, int width, int height, color3f (*trace) (const ray& R), RGBA32* data = nullptr) : 
-        view(view), samplesPerPixel(samplesPerPixel), trace(trace), image(width, height, data) {}
-
-        void render()
+        renderer(camera view, uint samplesPerPixel, const std::function<color3f(const ray& R)>& tracer) : 
+        view(view), samplesPerPixel(samplesPerPixel), trace(tracer){}
+        
+        void sample(raster& image)
+        {
+            for(size_t i = 0; i < image.width; ++i)
+                for(size_t j = 0; j < image.height; ++j)
+                    image.at(i, j) = colorftoRGBA32(trace(view.samplePixel(i, j)));
+        }
+        void render(raster& image)
         {
             for(size_t i = 0; i < image.width; ++i)
                 for(size_t j = 0; j < image.height; ++j)
@@ -32,11 +38,11 @@ namespace AiCo
                     }
                     image.at(i, j) = colorftoRGBA32(samplesAcc * (1.f/samplesPerPixel));
                 }
-            }
+        }
 
-        void operator()()
+        void operator()(raster& image)
         {
-            render();
+            render(image);
         }
     };
 }

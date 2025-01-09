@@ -22,7 +22,7 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
             if(e.type == SDL_QUIT)
                 quit = true;
         
-        ms_timer frameTimer;
+        micro_timer frameTimer;
         
         R.clear({255, 255, 255, 255});
 
@@ -37,10 +37,10 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
         R.draw_triangle_scr(R.toSCR({0.5, 0.5, 0.5}), R.toSCR({0.5, 0.65, 0.5}), R.toSCR({0.65f, 0.5f, 0.5f}),
         {{1.f, 0.f, 0.f}, {0.f, 1.f, 0.f}, {0.f, 0.f, 1.f}});
 
-        R.sample_raster(WND.height, WND.width, WND.framebuffer); 
+        R.sample_raster(WND.framebuffer.height, WND.framebuffer.width, WND.framebuffer.data); 
         WND.write_frame();
 
-        std::cout << frameTimer.clock().count() << " ms" << std::endl;
+        std::cout << frameTimer.clock().count()/1000.f << " ms" << std::endl;
     }
     output::terminate();
     return 0;
