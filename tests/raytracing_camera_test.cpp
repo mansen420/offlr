@@ -1,13 +1,13 @@
 #include "format.h"
-#include "glm/common.hpp"
 #include "raytracing/camera.h"
 #include "output.h"
+#include "raytracing/material.h"
 #include "raytracing/ray.h"
 #include "timer.h"
-#include "raster.h"
 #include "utils.h"
 #include "raytracing/geometry.h"
 #include "raytracing/renderer.h"
+#include "raytracing/tracer.h"
 
 #include <SDL_events.h>
 #include <SDL_video.h>
@@ -15,8 +15,6 @@
 #include <iostream>
 #include <memory>
 #include <string>
-
-AiCo::color3f rayGradient(const AiCo::RT::ray& sample);
 
 int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
 {
@@ -41,7 +39,7 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
                     if(insct.has_value())
                         return 0.5f * insct->N + glm::vec3(0.5);
                     else
-                        return rayGradient(sampler);
+                        return ray_gradient()(sampler);
                 };
     int recursionDepth = 0, maxDepth = 10;
     std::function<color3f(const ray&)> trace_diffuse = [&](const ray& sampler) -> color3f
@@ -56,9 +54,9 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
                     if(insct.has_value())
                         return 0.5f * trace_diffuse(ray(randvec_on_hemisphere(insct->N), insct->P));
                     else
-                        return rayGradient(sampler);
+                        return ray_gradient()(sampler);
                 };
-    std::function<color3f(const ray&)> trace_diffuse_lambertian = [&](const ray& sampler) -> color3f
+        std::function<color3f(const ray&)> trace_diffuse_lambertian = [&](const ray& sampler) -> color3f
                 {
                     recursionDepth++;
                     if(recursionDepth >= maxDepth)
@@ -71,9 +69,10 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
                     if(insct.has_value())
                         return 0.5f * trace_diffuse(ray(insct->N + randvec_on_unit_sphere(), insct->P));
                     else
-                        return rayGradient(sampler);
+                        return ray_gradient()(sampler);
                 };
-    renderer R(cam, 50, trace_diffuse_lambertian);
+    lambertian_diffuse mat({0.5f, 0.5f, 0.f});
+    renderer R(cam, 20, simple_tracer(&mat, balls, 100));
     
     R(WNDR.framebuffer);
     
@@ -101,11 +100,4 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
     }
     output::terminate();
     return 0;
-}
-
-AiCo::color3f rayGradient(const AiCo::RT::ray& sample)
-{
-    AiCo::color3f blue = {0.25, 0.4, 0.8};
-    AiCo::color3f white = {1, 1, 1};
-    return AiCo::lerp(0.5 * sample.dir.y + 0.5, blue, white);
 }

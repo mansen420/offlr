@@ -1,14 +1,12 @@
 #pragma once
 
-#include "glm/detail/qualifier.hpp"
-#include "glm/geometric.hpp"
 #include "glm/glm.hpp"
 
 #include <cstdlib>
 #include <limits>
-#include <type_traits>
 
 #include "interval.h"
+#include "format.h"
 
 namespace AiCo 
 {
@@ -47,4 +45,9 @@ namespace AiCo
     }
     template<glm::length_t len>
     inline bool nearzero_vec(glm::vec<len, float> u, float precision = 1e-8){return interval(-precision, precision).contains(u);}
+    inline color3f gamma(color3f color, float gammanum)
+    {
+        assert(gammanum > 0);
+        return glm::pow(color, glm::vec3(1.f/gammanum));
+    }
 }
