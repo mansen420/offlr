@@ -10,6 +10,7 @@
 #include <cassert>
 #include <cmath>
 #include <cstddef>
+#include <cstdio>
 #include <functional>
 #include <thread>
 
@@ -57,9 +58,20 @@ namespace AiCo
                             tile.at(i, j) = colorftoRGBA32(gamma(1.f/samplesPerPixel * samplesAcc, 2.f));
                         }
                 };
-                
+                auto renderTileTest = [&image](raster_view tile, color3f color)->void
+                {
+                    for(size_t i = 0; i < tile.width; ++i)
+                        for(size_t j = 0; j < tile.height; ++j)
+                        {
+                            if (&tile.at(i, j) != &image.at(i + tile.xOffset, j + tile.yOffset))
+                                printf("Indexing Mismatch! Local: (%zu, %zu), Global: (%lu, %lu), Offset : (%u, %u)\n", i, j, 
+                                i + tile.xOffset, j + tile.yOffset, tile.xOffset, tile.yOffset);
+                            tile.at(i, j) = colorftoRGBA32(gamma(color, 2.f));
+                        }
+                };               
                 for (auto tile : tiles.tiles)
-                    threads.enqueue_job([=](){renderTile(tile, samplesPerPixel, view, trace);});
+                    renderTile(tile, samplesPerPixel, view, trace);
+                    //threads.enqueue_job([=](){renderTile(tile, samplesPerPixel, view, trace);});
                 
                 while(threads.busy())
                 {

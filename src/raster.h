@@ -18,12 +18,12 @@ namespace AiCo
         raster_base() = delete;
         raster_base(int width, int height, RGBA32* data) noexcept : width(width), height(height), data(data) {}
 
-        inline RGBA32& at(size_t x, size_t y)
+        virtual inline RGBA32& at(size_t x, size_t y)
         {
             assert(x < width && y < height);
             return data[y*width + x];
         }
-        inline const RGBA32& at(size_t x, size_t y)const 
+        virtual inline const RGBA32& at(size_t x, size_t y)const 
         {
             assert(x < width && y < height);
             return data[y*width + x];
@@ -66,8 +66,21 @@ namespace AiCo
     class raster_view : public raster_base
     {
     public:
-        unsigned int xOffset, yOffset;
-        raster_view(int width, int height, unsigned int xOffset, unsigned int yOffset, RGBA32* data) noexcept : raster_base(width, height, data) {}
+        unsigned int xOffset, yOffset, parentWidth;
+        raster_view(int width, int height, unsigned int xOffset, unsigned int yOffset, unsigned int parentWidth, RGBA32* data) noexcept : 
+        raster_base(width, height, data), xOffset(xOffset), yOffset(yOffset), parentWidth(parentWidth){}
+        
+        inline RGBA32& at(size_t x, size_t y) override
+        {
+            assert(x < width && y < height);
+            return data[y*parentWidth + x];
+        }
+        inline const RGBA32& at(size_t x, size_t y)const override 
+        {
+            assert(x < width && y < height);
+            return data[y*parentWidth + x];
+        }
+
         ~raster_view() noexcept override {}
     };
     class tiled_raster
@@ -91,7 +104,7 @@ namespace AiCo
                     unsigned int realWidth = j == nrCols - 1 ? img.width - xOffset : tileWidth;
                     unsigned int realHeight = i == nrRows - 1 ? img.height - yOffset : tileHeight;
 
-                    tiles.push_back(raster_view(realWidth, realHeight, xOffset, yOffset, &img.at(xOffset, yOffset)));
+                    tiles.push_back(raster_view(realWidth, realHeight, xOffset, yOffset, img.width, &img.at(xOffset, yOffset)));
                 }
         }
 
