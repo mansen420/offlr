@@ -1,8 +1,8 @@
 #pragma once
 
 #include "format.h"
-#include <algorithm>
 #include <cassert>
+#include <cmath>
 #include <cstddef>
 #include <cstring>
 #include <vector>
@@ -33,7 +33,7 @@ namespace AiCo
     };
     inline raster_base::~raster_base() {}
 
-    class raster : raster_base
+    class raster : public raster_base
     {
     public:
         raster() = delete;
@@ -66,8 +66,9 @@ namespace AiCo
     class raster_view : public raster_base
     {
     public:
-       raster_view(int width, int height, RGBA32* data) noexcept : raster_base(width, height, data) {}
-       ~raster_view() noexcept override {}
+        unsigned int xOffset, yOffset;
+        raster_view(int width, int height, unsigned int xOffset, unsigned int yOffset, RGBA32* data) noexcept : raster_base(width, height, data) {}
+        ~raster_view() noexcept override {}
     };
     class tiled_raster
     {
@@ -75,12 +76,27 @@ namespace AiCo
         raster& img;
         std::vector<raster_view> tiles;
 
-        void gen_tiles(unsigned int count)
+        void gen_tiles (unsigned int nrRows, unsigned nrCols) noexcept
         {
+            unsigned int count = nrCols * nrRows;
+
+            tiles.reserve(count);
+
+            unsigned int tileWidth = img.width/nrCols, tileHeight = img.height/nrRows;
+            for (size_t i = 0; i < nrRows; ++i)
+                for (size_t j = 0; j <  nrCols; ++j)
+                {
+                    unsigned int xOffset = tileWidth * j, yOffset = tileHeight * i;
+
+                    unsigned int realWidth = j == nrCols - 1 ? img.width - xOffset : tileWidth;
+                    unsigned int realHeight = i == nrRows - 1 ? img.height - yOffset : tileHeight;
+
+                    tiles.push_back(raster_view(realWidth, realHeight, xOffset, yOffset, &img.at(xOffset, yOffset)));
+                }
         }
 
-        const unsigned int count;
-        tiled_raster(raster& image, unsigned int tiles) : img(image), count(tiles) {}
+        const unsigned int rows, cols;
+        tiled_raster(raster& image, unsigned int nrRows, unsigned nrCols) : img(image), rows(nrRows), cols(nrCols) {gen_tiles(nrRows, nrCols);}
 
     };
 };

@@ -18,6 +18,7 @@ namespace AiCo
         std::condition_variable mutexCond;
         bool shouldTerminate = false;
     public:
+        size_t count(){return threads.size();}
         threadpool() 
         {
             unsigned int count = std::thread::hardware_concurrency();

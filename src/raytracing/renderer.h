@@ -5,11 +5,13 @@
 #include "glm/exponential.hpp"
 #include "raster.h"
 #include "raytracing/ray.h"
-#include "raytracing/tracer.h"
+#include "threadpool.h"
+#include "utils.h"
 #include <cassert>
 #include <cmath>
 #include <cstddef>
 #include <functional>
+#include <thread>
 
 namespace AiCo 
 {
@@ -17,6 +19,7 @@ namespace AiCo
     {
         class renderer
         {
+            static threadpool threads;
         public:
             const camera view;
             uint samplesPerPixel;
@@ -35,17 +38,33 @@ namespace AiCo
 
             static void render(raster& image, const std::function<color3f(const ray& R)>& trace, camera view, uint samplesPerPixel)
             {
-                for(size_t i = 0; i < image.width; ++i)
-                    for(size_t j = 0; j < image.height; ++j)
-                    {
-                        color3f samplesAcc = color3f{0.f, 0.f, 0.f};
-                        for(size_t k = 0; k < samplesPerPixel; k++)
+                unsigned int count = threads.count();
+                
+                unsigned int nrRows = std::sqrt(count);
+                unsigned int nrCols = (count +  nrRows - 1)/nrRows;
+
+                tiled_raster tiles(image, nrRows, nrCols);
+                
+                auto renderTile = [](raster_view tile, unsigned int samplesPerPixel, camera view, 
+                const std::function<color3f(const ray& R)>& trace)->void
+                {
+                    for(size_t i = 0; i < tile.width; ++i)
+                        for(size_t j = 0; j < tile.height; ++j)
                         {
-                            ray sampler = view.samplePixel(i, j);
-                            samplesAcc += trace(sampler);
+                            color3f samplesAcc = color3f{0.f, 0.f, 0.f};
+                            for(size_t k = 0; k < samplesPerPixel; k++)
+                                samplesAcc += trace(view.samplePixel(i + tile.xOffset, j + tile.yOffset));
+                            tile.at(i, j) = colorftoRGBA32(gamma(1.f/samplesPerPixel * samplesAcc, 2.f));
                         }
-                        image.at(i, j) = colorftoRGBA32(gamma(1.f/samplesPerPixel * samplesAcc, 2.f));
-                    }
+                };
+                
+                for (auto tile : tiles.tiles)
+                    threads.enqueue_job([=](){renderTile(tile, samplesPerPixel, view, trace);});
+                
+                while(threads.busy())
+                {
+                    continue;
+                }
             }
             
             void operator()(raster& image)
@@ -53,5 +72,6 @@ namespace AiCo
                 render(image);
             }
         };
+        inline threadpool renderer::threads = threadpool();
     }
 }
