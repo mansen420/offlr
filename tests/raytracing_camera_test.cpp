@@ -12,6 +12,7 @@
 #include <SDL_events.h>
 #include <SDL_video.h>
 #include <cmath>
+#include <cstdio>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -72,8 +73,8 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
                         return ray_gradient()(sampler);
                 };
     lambertian_diffuse mat({0.5f, 0.5f, 0.f});
-    renderer R(cam, 20, simple_tracer(&mat, balls, 100));
-    
+    renderer R(cam, 2, simple_tracer(&mat, balls, 100));
+
     R(WNDR.framebuffer);
     
     micro_timer globalTimer;
@@ -89,7 +90,7 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
         micro_timer frameTimer;
 
         R.render(WND.framebuffer);
-
+        printf("YO\n");
 
         WNDR.write_frame();
         WND.write_frame();

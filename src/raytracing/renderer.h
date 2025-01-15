@@ -8,6 +8,7 @@
 #include "threadpool.h"
 #include "utils.h"
 #include <cassert>
+#include <chrono>
 #include <cmath>
 #include <cstddef>
 #include <cstdio>
@@ -43,11 +44,14 @@ namespace AiCo
                 
                 unsigned int nrRows = std::sqrt(count);
                 unsigned int nrCols = (count +  nrRows - 1)/nrRows;
-
-                tiled_raster tiles(image, nrRows, nrCols);
                 
+                nrRows = 1;
+                nrCols = 1;
+            
+                auto tiles = tile_raster(&image, nrRows, nrCols);
+
                 auto renderTile = [](raster_view tile, unsigned int samplesPerPixel, camera view, 
-                const std::function<color3f(const ray& R)>& trace)->void
+                std::function<color3f(const ray& R)> trace)->void
                 {
                     for(size_t i = 0; i < tile.width; ++i)
                         for(size_t j = 0; j < tile.height; ++j)
@@ -69,14 +73,15 @@ namespace AiCo
                             tile.at(i, j) = colorftoRGBA32(gamma(color, 2.f));
                         }
                 };               
-                for (auto tile : tiles.tiles)
-                    renderTile(tile, samplesPerPixel, view, trace);
-                    //threads.enqueue_job([=](){renderTile(tile, samplesPerPixel, view, trace);});
-                
+                for (auto& tile : tiles)
+                    threads.enqueue_job([=](){renderTile(tile, samplesPerPixel, view, trace);});
+
                 while(threads.busy())
                 {
-                    continue;
+                    std::this_thread::sleep_for(std::chrono::microseconds(100));
                 }
+
+                printf("HEY\n");
             }
             
             void operator()(raster& image)

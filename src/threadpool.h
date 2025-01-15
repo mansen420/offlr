@@ -35,6 +35,8 @@ namespace AiCo
             mutexCond.notify_one();
         }
         bool busy(){std::unique_lock<std::mutex> lock (queueMutex); return !jobQueue.empty();}
+        
+        //this WILL destroy the object!
         void stop(){
             {
                 std::unique_lock<std::mutex> lock (queueMutex);
