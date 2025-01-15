@@ -75,9 +75,8 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
     lambertian_diffuse mat({0.5f, 0.5f, 0.f});
     renderer R(cam, 2, simple_tracer(&mat, balls, 100));
 
-    R(WNDR.framebuffer);
-    
     micro_timer globalTimer;
+    R(WNDR.framebuffer);
 
     bool quit = false;
     while(!quit)
@@ -89,8 +88,7 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
 
         micro_timer frameTimer;
 
-        R.render(WND.framebuffer);
-        printf("YO\n");
+        R(WND.framebuffer);
 
         WNDR.write_frame();
         WND.write_frame();

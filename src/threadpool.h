@@ -2,7 +2,9 @@
 
 #include <condition_variable>
 #include <cstddef>
+#include <cstdio>
 #include <functional>
+#include <memory>
 #include <mutex>
 #include <queue>
 #include <thread>
@@ -13,15 +15,62 @@ namespace AiCo
     class threadpool
     {
         std::vector<std::thread> threads;
-        std::mutex queueMutex;
+        std::mutex poolMutex;
         std::queue<std::function<void()>> jobQueue;
         std::condition_variable mutexCond;
         bool shouldTerminate = false;
+
+        std::condition_variable idleCond;
+        unsigned int activeThreads = 0;
+
+        void loop()
+        {
+            while(true)
+            {
+                std::function<void()> job;
+
+                if(empty())
+                {
+                    {
+                        std::unique_lock<std::mutex> lock(poolMutex);
+                        mutexCond.wait(lock, [this](){return !jobQueue.empty() || shouldTerminate;});
+                        if (shouldTerminate)
+                            return;   
+                    }
+                }
+                {
+                    std::unique_lock<std::mutex> lock(poolMutex);
+                    job = jobQueue.front();
+                    jobQueue.pop();
+                    activeThreads++;
+                }
+
+                job();
+                
+                {
+                    std::unique_lock<std::mutex> lock(poolMutex);
+                    activeThreads--;
+                }
+                if(all_idle())
+                    idleCond.notify_all();
+            }
+        }
+        bool all_idle()
+        {
+            unsigned int threads, jobs;
+            bool ret = false;
+            {
+                std::lock_guard<std::mutex> idleLock(poolMutex);
+                threads = activeThreads; jobs = jobQueue.size();
+                ret = threads == 0 && jobs == 0;
+            }
+
+            return ret;
+        }
     public:
         size_t count(){return threads.size();}
-        threadpool() 
+        threadpool(unsigned int count = std::thread::hardware_concurrency()) 
         {
-            unsigned int count = std::thread::hardware_concurrency();
             threads.reserve(count);
             for(size_t i = 0; i < count; ++i)
                 threads.emplace_back(std::thread(&threadpool::loop, this));
@@ -29,17 +78,17 @@ namespace AiCo
         void enqueue_job(const std::function<void()>& job)
         {
             {
-                std::unique_lock<std::mutex> lock (queueMutex);
+                std::unique_lock<std::mutex> lock (poolMutex);
                 jobQueue.push(job);
             }
             mutexCond.notify_one();
         }
-        bool busy(){std::unique_lock<std::mutex> lock (queueMutex); return !jobQueue.empty();}
+        bool empty(){std::unique_lock<std::mutex> lock (poolMutex); return jobQueue.empty();}
         
         //this WILL destroy the object!
         void stop(){
             {
-                std::unique_lock<std::mutex> lock (queueMutex);
+                std::unique_lock<std::mutex> lock (poolMutex);
                 shouldTerminate = true;
             }
             mutexCond.notify_all();
@@ -47,25 +96,19 @@ namespace AiCo
                 activeThread.join();
             threads.clear();
         }
-        void loop()
+
+        void wait_till_done()
         {
-            while(true)
+
+            if(all_idle())
+                return;
+            else
             {
-                std::function<void()> job;
-                {
-                    std::unique_lock<std::mutex> lock (queueMutex);
-
-                    mutexCond.wait(lock, [=, this](){return !jobQueue.empty() || shouldTerminate;});
-
-                    if(shouldTerminate)
-                        return;
-
-                    job = jobQueue.front();
-                    jobQueue.pop();
-                }
-                job();
+                std::unique_lock<std::mutex> lock (poolMutex);
+                idleCond.wait(lock, [this](){return activeThreads == 0 && jobQueue.empty();});
             }
         }
+
         ~threadpool(){stop();}
     };
 }

@@ -13,6 +13,7 @@
 #include <cstddef>
 #include <cstdio>
 #include <functional>
+#include <ratio>
 #include <thread>
 
 namespace AiCo 
@@ -45,9 +46,6 @@ namespace AiCo
                 unsigned int nrRows = std::sqrt(count);
                 unsigned int nrCols = (count +  nrRows - 1)/nrRows;
                 
-                nrRows = 1;
-                nrCols = 1;
-            
                 auto tiles = tile_raster(&image, nrRows, nrCols);
 
                 auto renderTile = [](raster_view tile, unsigned int samplesPerPixel, camera view, 
@@ -72,16 +70,15 @@ namespace AiCo
                                 i + tile.xOffset, j + tile.yOffset, tile.xOffset, tile.yOffset);
                             tile.at(i, j) = colorftoRGBA32(gamma(color, 2.f));
                         }
-                };               
-                for (auto& tile : tiles)
+                };
+                
+                //todo why is taking tile by reference wrong here?
+                for (auto tile : tiles)
                     threads.enqueue_job([=](){renderTile(tile, samplesPerPixel, view, trace);});
-
-                while(threads.busy())
-                {
-                    std::this_thread::sleep_for(std::chrono::microseconds(100));
-                }
-
-                printf("HEY\n");
+                
+                threads.wait_till_done();
+                
+                printf("FIN.\n");
             }
             
             void operator()(raster& image)
@@ -89,6 +86,6 @@ namespace AiCo
                 render(image);
             }
         };
-        inline threadpool renderer::threads = threadpool();
+        inline threadpool renderer::threads = threadpool(2);
     }
 }
