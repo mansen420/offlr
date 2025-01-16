@@ -72,7 +72,7 @@ namespace AiCo
                         }
                 };
                 
-                //todo why is taking tile by reference wrong here?
+                //TODO why is taking tile by reference wrong here?
                 for (auto tile : tiles)
                     threads.enqueue_job([=](){renderTile(tile, samplesPerPixel, view, trace);});
                 
@@ -86,6 +86,6 @@ namespace AiCo
                 render(image);
             }
         };
-        inline threadpool renderer::threads = threadpool(2);
+        inline threadpool renderer::threads = threadpool();
     }
 }

@@ -4,6 +4,7 @@
 
 #include <cstdlib>
 #include <limits>
+#include <random>
 
 #include "interval.h"
 #include "format.h"
@@ -19,8 +20,14 @@ namespace AiCo
     
     /**
      * @brief Returns random number in [0, 1[
+     * thread-safe.
      */
-    inline float rand(){return std::rand()/(RAND_MAX + 1.f);}
+    inline float rand()
+    {
+        static thread_local std::mt19937 RNG(std::random_device{}());
+        std::uniform_real_distribution<float> dist(0.f, 1.f);
+        return dist(RNG);
+    }
     inline float rand(interval K){return K.min + (K.max - K.min)*AiCo::rand();}
 
     inline glm::vec3 randvec(){return glm::vec3(rand(), rand(), rand());}

@@ -76,7 +76,10 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
     renderer R(cam, 2, simple_tracer(&mat, balls, 100));
 
     micro_timer globalTimer;
+
     R(WNDR.framebuffer);
+    WNDR.write_frame();
+    std::printf("Fin. %fms", globalTimer.clock().count()/1000.f );
 
     bool quit = false;
     while(!quit)
