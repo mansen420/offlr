@@ -31,21 +31,24 @@ namespace AiCo
 
                 if(empty())
                 {
-                    {
-                        std::unique_lock<std::mutex> lock(poolMutex);
-                        mutexCond.wait(lock, [this](){return !jobQueue.empty() || shouldTerminate;});
-                        if (shouldTerminate)
-                            return;   
-                    }
+                    std::unique_lock<std::mutex> lock(poolMutex);
+                    mutexCond.wait(lock, [this](){return !jobQueue.empty() || shouldTerminate;});
+                    if (shouldTerminate)
+                        return;
                 }
                 {
                     std::unique_lock<std::mutex> lock(poolMutex);
+                    if(jobQueue.empty())
+                        continue; // TODO the fact that code is reaching here is dangerous. Examine this!
                     job = jobQueue.front();
                     jobQueue.pop();
                     activeThreads++;
                 }
-
-                job();
+                
+                if(!job)
+                    printf("PROBLEM!\n");
+                else if(job)
+                    job();
                 
                 {
                     std::unique_lock<std::mutex> lock(poolMutex);
@@ -69,6 +72,7 @@ namespace AiCo
         }
     public:
         size_t count(){return threads.size();}
+
         threadpool(unsigned int count = std::thread::hardware_concurrency()) 
         {
             threads.reserve(count);

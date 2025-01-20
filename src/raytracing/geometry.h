@@ -4,32 +4,33 @@
 #include "glm/geometric.hpp"
 #include "interval.h"
 #include "ray.h"
+#include "raytracing/material.h"
+#include "intersection.h"
 
 #include <cfloat>
 #include <limits.h>
 #include <memory.h>
 #include <memory>
 #include <optional>
+#include <vector>
 
 namespace AiCo 
 {
     namespace RT 
     {
+        class surface_mapper_base;
+
+        typedef std::function<std::optional<intersection_t>(const ray& R, interval k)> intersector_t;
         class geometry
         {
         public:
-            struct intersection_t
+            [[nodiscard]] virtual std::optional<intersection_t> test_intersect(const ray& R, interval K)const = 0;
+            
+            [[nodiscard]] virtual std::optional<intersection_t> operator()(const ray& R, interval K)const
             {
-                intersection_t(const ray& R, const glm::vec3& outwardNormal, const glm::vec3& P, float t) : 
-                P(P), N(outwardNormal), t(t), frontFace(glm::dot(outwardNormal, R.dir) < 0){}
-                
-                intersection_t() = delete;
+                return test_intersect(R, K);
+            }
 
-                const glm::vec3 P, N;
-                const float t;
-                const bool frontFace;
-            };
-            [[nodiscard]] virtual std::optional<intersection_t> testIntersect(const ray& R, interval K)const = 0;
             virtual ~geometry() = default;
         };
 
@@ -42,7 +43,7 @@ namespace AiCo
             sphere() = delete;
             sphere(float radius, glm::vec3 center) : radius(radius), center(center) {}
 
-            [[nodiscard]] virtual std::optional<intersection_t> testIntersect(const ray& R, interval K)const override
+            [[nodiscard]] virtual std::optional<intersection_t> test_intersect(const ray& R, interval K)const override
             {
                 //just copied this code from RT in one weekend. should work
                 glm::vec3 oc = center - R.origin;
@@ -72,14 +73,16 @@ namespace AiCo
         class nearest_hit_structure : public geometry
         {
         public:
-            std::vector<std::shared_ptr<geometry>> list;
+            std::vector<intersector_t> list;
+            
+            nearest_hit_structure(std::vector<intersector_t> list) : list(list) {}
 
-            [[nodiscard]] virtual std::optional<intersection_t> testIntersect(const ray& R, interval K)const override
+            [[nodiscard]] virtual std::optional<intersection_t> test_intersect(const ray& R, interval K)const override
             {
                 float closestIntersect = K.min;
-                for(const auto& obj : list)
+                for(const auto& insctr : list)
                 {
-                    auto insct = obj->testIntersect(R, {closestIntersect, K.max});
+                    auto insct = insctr(R, {closestIntersect, K.max});
                     if(insct.has_value())
                     {
                         closestIntersect = insct->t;

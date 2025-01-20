@@ -5,6 +5,7 @@
 #include <cmath>
 #include <complex>
 #include <cstddef>
+#include <cstdio>
 #include <cstring>
 #include <vector>
 
@@ -22,11 +23,15 @@ namespace AiCo
         virtual inline RGBA32& at(size_t x, size_t y)
         {
             assert(x < width && y < height);
+            if(x >= width || y >= height)
+                printf("WOW\n");
             return data[y*width + x];
         }
         virtual inline const RGBA32& at(size_t x, size_t y)const 
         {
             assert(x < width && y < height);
+            if(x >= width || y >= height)
+                printf("WOW\n");
             return data[y*width + x];
         }
         

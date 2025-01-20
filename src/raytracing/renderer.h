@@ -32,14 +32,14 @@ namespace AiCo
             view(view), samplesPerPixel(samplesPerPixel), trace(trace){}
             
             void sample(raster& image){return sample(image, trace, view);}
-            static void sample(raster& image, const std::function<color3f(const ray& R)>& trace, camera view)
+            static void sample(raster& image, std::function<color3f(const ray& R)> trace, camera view)
             {
                 render(image, trace, view, 1);
             }
 
             void render(raster& image){return render(image, trace, view, samplesPerPixel);}
 
-            static void render(raster& image, const std::function<color3f(const ray& R)>& trace, camera view, uint samplesPerPixel)
+            static void render(raster& image, std::function<color3f(const ray& R)> trace, camera view, uint samplesPerPixel)
             {
                 unsigned int count = threads.count();
                 

@@ -28,60 +28,29 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
     camera cam(2.f, width, height);
     output::window WND("samples", 0, 0, width, height);
     output::window WNDR("render", width, height, width, height);
-
-    nearest_hit_structure balls;
-    std::shared_ptr<sphere> smallBall = std::make_shared<sphere>(0.5f, glm::vec3{0.2f, 0.5f, -2.f});
-    balls.list.push_back(smallBall);
-    balls.list.push_back(std::make_shared<sphere>(sphere(20.f, {0.0f, -20.5f, -2.f})));
     
-    auto trace = [&](const ray& sampler) -> color3f
-                {
-                    auto insct = balls.testIntersect(sampler, {0.f, 10.f});
-                    if(insct.has_value())
-                        return 0.5f * insct->N + glm::vec3(0.5);
-                    else
-                        return ray_gradient()(sampler);
-                };
-    int recursionDepth = 0, maxDepth = 10;
-    std::function<color3f(const ray&)> trace_diffuse = [&](const ray& sampler) -> color3f
-                {
-                    recursionDepth++;
-                    if(recursionDepth >= maxDepth)
-                    {
-                        recursionDepth = 0;
-                        return {0.f, 0.f, 0.f};
-                    }
-                    auto insct = balls.testIntersect(sampler, {0.0001f, 10.f});
-                    if(insct.has_value())
-                        return 0.5f * trace_diffuse(ray(randvec_on_hemisphere(insct->N), insct->P));
-                    else
-                        return ray_gradient()(sampler);
-                };
-        std::function<color3f(const ray&)> trace_diffuse_lambertian = [&](const ray& sampler) -> color3f
-                {
-                    recursionDepth++;
-                    if(recursionDepth >= maxDepth)
-                    {
-                        recursionDepth = 0;
-                        return {0.f, 0.f, 0.f};
-                    }
-                    
-                    auto insct = balls.testIntersect(sampler, {0.0001f, 10.f});
-                    if(insct.has_value())
-                        return 0.5f * trace_diffuse(ray(insct->N + randvec_on_unit_sphere(), insct->P));
-                    else
-                        return ray_gradient()(sampler);
-                };
-    lambertian_diffuse mat({0.5f, 0.5f, 0.f});
-    renderer R(cam, 2, simple_tracer(&mat, balls, 100));
+
+    sphere smallBall(0.5f, {0.2f, 0.5f, -2.f});
+    sphere bigBall(20.f, {0.0f, -20.5f, -2.f});
+    
+    auto balls_intersector = [&smallBall, &bigBall] (const ray& R, interval K)
+    {
+        return nearest_hit_structure({smallBall, bigBall})(R, K);
+    };
+
+
+    lambertian_diffuse mat({0.5f, 0.5f, 0.55f});
+    renderer R(cam, 2, simple_tracer(&mat, balls_intersector, 100));
 
     micro_timer globalTimer;
 
     R(WNDR.framebuffer);
     WNDR.write_frame();
     std::printf("Fin. %fms", globalTimer.clock().count()/1000.f );
+    R.samplesPerPixel = 10;
 
     bool quit = false;
+    unsigned int count = 0;
     while(!quit)
     {
         SDL_Event e;
@@ -95,10 +64,10 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
 
         WNDR.write_frame();
         WND.write_frame();
+       
+        std::printf("frame idx : %d\ttime : %0.2fms\n", count++, frameTimer.clock().count()/1000.f );
 
-        std::cout << frameTimer.clock().count()/1000.f << " ms" << std::endl;
-
-        smallBall->radius = 0.5 * cos(0.7 * double(globalTimer.time_since_start().count())/1e+6) + 0.5;
+        smallBall.radius = 0.5 * cos(0.7 * double(globalTimer.time_since_start().count())/1e+6) + 0.5;
     }
     output::terminate();
     return 0;
