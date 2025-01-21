@@ -23,7 +23,6 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
     output::init();
     int width = std::stoi(argv[1]), height = std::stoi(argv[2]);
 
-    camera cam(2.f, width, height);
     output::window WND("samples", 0, 0, width, height);
     output::window WNDR("render", width, height, width, height);
     
@@ -36,7 +35,7 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
         return nearest_intersect({smallBall, bigBall})(R, K);
     };
 
-    renderer R(cam, 10, 
+    renderer R(camera(2.f, width, height), 10, 
     simple_pipeline(scene, {0.0001f, 10.f}, 
     simple_tracer(lambertian_diffuse({0.5, 0.5, 0.55}), 100)));
 
