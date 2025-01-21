@@ -67,7 +67,7 @@ namespace AiCo
                         return {0, 0, 0};
                 }
                 else
-                    return {1.f, 1.f, 1.f};
+                    return rayGradient(R);
             }
         };
     }
