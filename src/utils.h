@@ -33,7 +33,9 @@ namespace AiCo
     inline glm::vec3 randvec(){return glm::vec3(rand(), rand(), rand());}
     inline glm::vec3 randvec(interval K){return glm::vec3(rand(K), rand(K), rand(K));}
     
-    inline glm::vec3 randvec_on_unit_sphere()
+    // TODO for fuck's sake this function is 25% of the frametime. 
+    // for god's sake please implement spherical coordinate sampling!
+    [[nodiscard]] inline glm::vec3 randvec_on_unit_sphere()
     {
         while (true)
         {
@@ -42,7 +44,7 @@ namespace AiCo
                 return glm::normalize(candidate);
         }
     }
-    inline glm::vec3 randvec_on_hemisphere(glm::vec3 surface_outward_normal)
+    [[nodiscard]] inline glm::vec3 randvec_on_hemisphere(glm::vec3 surface_outward_normal)
     {
         auto candidate = randvec_on_unit_sphere();
         if(glm::dot(candidate, surface_outward_normal) > 0.f)
@@ -51,10 +53,16 @@ namespace AiCo
             return -candidate;
     }
     template<glm::length_t len>
-    inline bool nearzero_vec(glm::vec<len, float> u, float precision = 1e-8){return interval(-precision, precision).contains(u);}
-    inline color3f gamma(color3f color, float gammanum)
+    [[nodiscard]] inline bool nearzero_vec(glm::vec<len, float> u, float precision = 1e-8){return interval(-precision, precision).contains(u);}
+    [[nodiscard]] inline color3f gamma(color3f color, float gammanum)
     {
         assert(gammanum > 0);
         return glm::pow(color, glm::vec3(1.f/gammanum));
     }
+
+    /**
+     * @brief Linear mapping between two intervals
+     * %val must be in %from.
+     */
+    [[nodiscard]] inline float map(float val, interval from, interval to = interval::NORM);
 }
