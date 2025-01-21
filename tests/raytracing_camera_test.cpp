@@ -1,20 +1,18 @@
 #include "format.h"
 #include "raytracing/camera.h"
 #include "output.h"
+#include "raytracing/intersection.h"
 #include "raytracing/material.h"
-#include "raytracing/ray.h"
 #include "timer.h"
-#include "utils.h"
 #include "raytracing/geometry.h"
 #include "raytracing/renderer.h"
 #include "raytracing/tracer.h"
+#include "raytracing/pipeline.h"
 
 #include <SDL_events.h>
 #include <SDL_video.h>
 #include <cmath>
 #include <cstdio>
-#include <iostream>
-#include <memory>
 #include <string>
 
 int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
@@ -33,14 +31,14 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
     sphere smallBall(0.5f, {0.2f, 0.5f, -2.f});
     sphere bigBall(20.f, {0.0f, -20.5f, -2.f});
     
-    auto balls_intersector = [&smallBall, &bigBall] (const ray& R, interval K)
+    auto scene = [&smallBall, &bigBall](ray R, interval K)
     {
-        return nearest_hit_structure({smallBall, bigBall})(R, K);
+        return nearest_intersect({smallBall, bigBall})(R, K);
     };
 
-
-    lambertian_diffuse mat({0.5f, 0.5f, 0.55f});
-    renderer R(cam, 2, simple_tracer(&mat, balls_intersector, 100));
+    renderer R(cam, 10, 
+    simple_pipeline(scene, {0.0001f, 10.f}, 
+    simple_tracer(lambertian_diffuse({0.5, 0.5, 0.55}), 100)));
 
     micro_timer globalTimer;
 
@@ -66,7 +64,7 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
         WND.write_frame();
        
         std::printf("frame idx : %d\ttime : %0.2fms\n", count++, frameTimer.clock().count()/1000.f );
-
+        
         smallBall.radius = 0.5 * cos(0.7 * double(globalTimer.time_since_start().count())/1e+6) + 0.5;
     }
     output::terminate();

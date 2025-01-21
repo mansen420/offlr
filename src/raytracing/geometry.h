@@ -1,40 +1,32 @@
 #pragma once
 
-#include "glm/fwd.hpp"
-#include "glm/geometric.hpp"
+#include "format.h"
 #include "interval.h"
 #include "ray.h"
-#include "raytracing/material.h"
 #include "intersection.h"
+#include "utils.h"
 
 #include <cfloat>
 #include <limits.h>
-#include <memory.h>
-#include <memory>
 #include <optional>
-#include <vector>
 
 namespace AiCo 
 {
     namespace RT 
     {
-        class surface_mapper_base;
+        typedef std::function<std::optional<intersection_t>(ray R, interval k)> intersector_t;
+        typedef std::function<color3f(intersector_t)> surface_mapper_t;
 
-        typedef std::function<std::optional<intersection_t>(const ray& R, interval k)> intersector_t;
-        class geometry
+        class surface_mapper_base;
+        class geometry_base
         {
         public:
-            [[nodiscard]] virtual std::optional<intersection_t> test_intersect(const ray& R, interval K)const = 0;
-            
-            [[nodiscard]] virtual std::optional<intersection_t> operator()(const ray& R, interval K)const
-            {
-                return test_intersect(R, K);
-            }
+            [[nodiscard]] virtual std::optional<intersection_t> operator()(ray R, interval K)const = 0;
 
-            virtual ~geometry() = default;
+            virtual ~geometry_base() = default;
         };
 
-        class sphere : public geometry
+        class sphere : public geometry_base
         {
         public:
             float radius;
@@ -42,8 +34,14 @@ namespace AiCo
 
             sphere() = delete;
             sphere(float radius, glm::vec3 center) : radius(radius), center(center) {}
-
-            [[nodiscard]] virtual std::optional<intersection_t> test_intersect(const ray& R, interval K)const override
+            
+            [[nodiscard]] virtual std::optional<intersection_t> operator()(ray R, interval K)const override
+            {
+                return test_intersect(R, K);
+            }
+            
+        private:
+            [[nodiscard]] virtual std::optional<intersection_t> test_intersect(ray R, interval K)const
             {
                 //just copied this code from RT in one weekend. should work
                 glm::vec3 oc = center - R.origin;
@@ -69,21 +67,27 @@ namespace AiCo
                 return intersection_t(R, (P - center)/radius, P, root);
             }
         };
+        
 
-        class nearest_hit_structure : public geometry
+        class nearest_intersect : public geometry_base
         {
         public:
             std::vector<intersector_t> list;
             
-            nearest_hit_structure(std::vector<intersector_t> list) : list(list) {}
+            nearest_intersect(std::vector<intersector_t> list) : list(list) {}
 
-            [[nodiscard]] virtual std::optional<intersection_t> test_intersect(const ray& R, interval K)const override
+            [[nodiscard]] virtual std::optional<intersection_t> operator()(ray R, interval K)const override
+            {
+                return test_intersect(R, K);
+            }
+
+        private:
+            [[nodiscard]] virtual std::optional<intersection_t> test_intersect(ray R, interval K)const
             {
                 float closestIntersect = K.min;
                 for(const auto& insctr : list)
                 {
-                    auto insct = insctr(R, {closestIntersect, K.max});
-                    if(insct.has_value())
+                    if(auto insct = insctr(R, {closestIntersect, K.max}); insct.has_value())
                     {
                         closestIntersect = insct->t;
                         return insct;

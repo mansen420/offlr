@@ -2,19 +2,16 @@
 
 #include "camera.h"
 #include "format.h"
-#include "glm/exponential.hpp"
 #include "raster.h"
-#include "raytracing/ray.h"
+#include "raytracing/tracer.h"
 #include "threadpool.h"
 #include "utils.h"
+#include "raytracing/pipeline.h"
 #include <cassert>
-#include <chrono>
 #include <cmath>
 #include <cstddef>
 #include <cstdio>
 #include <functional>
-#include <ratio>
-#include <thread>
 
 namespace AiCo 
 {
@@ -26,20 +23,13 @@ namespace AiCo
         public:
             const camera view;
             uint samplesPerPixel;
-            std::function<color3f(const ray& R)> trace;
+            pipeline_t pipeline;
 
-            renderer(camera view, uint samplesPerPixel, std::function<color3f(const ray& R)> trace) : 
-            view(view), samplesPerPixel(samplesPerPixel), trace(trace){}
-            
-            void sample(raster& image){return sample(image, trace, view);}
-            static void sample(raster& image, std::function<color3f(const ray& R)> trace, camera view)
-            {
-                render(image, trace, view, 1);
-            }
+            renderer(camera view, uint samplesPerPixel, pipeline_t pipeline) : view(view), samplesPerPixel(samplesPerPixel), pipeline(pipeline){}
 
-            void render(raster& image){return render(image, trace, view, samplesPerPixel);}
+            void render(raster& image){return render(image, pipeline, view, samplesPerPixel);}
 
-            static void render(raster& image, std::function<color3f(const ray& R)> trace, camera view, uint samplesPerPixel)
+            static void render(raster& image, pipeline_t pipeline, camera view, uint samplesPerPixel)
             {
                 unsigned int count = threads.count();
                 
@@ -48,15 +38,14 @@ namespace AiCo
                 
                 auto tiles = tile_raster(&image, nrRows, nrCols);
 
-                auto renderTile = [](raster_view tile, unsigned int samplesPerPixel, camera view, 
-                std::function<color3f(const ray& R)> trace)->void
+                auto renderTile = [](raster_view tile, unsigned int samplesPerPixel, camera view, pipeline_t pipeline)->void
                 {
                     for(size_t i = 0; i < tile.width; ++i)
                         for(size_t j = 0; j < tile.height; ++j)
                         {
                             color3f samplesAcc = color3f{0.f, 0.f, 0.f};
                             for(size_t k = 0; k < samplesPerPixel; k++)
-                                samplesAcc += trace(view.samplePixel(i + tile.xOffset, j + tile.yOffset));
+                                samplesAcc += pipeline(view.samplePixel(i + tile.xOffset, j + tile.yOffset));
                             tile.at(i, j) = colorftoRGBA32(gamma(1.f/samplesPerPixel * samplesAcc, 2.f));
                         }
                 };
@@ -74,7 +63,7 @@ namespace AiCo
                 
                 //TODO why is taking tile by reference wrong here?
                 for (auto tile : tiles)
-                    threads.enqueue_job([=](){renderTile(tile, samplesPerPixel, view, trace);});
+                    threads.enqueue_job([=](){renderTile(tile, samplesPerPixel, view, pipeline);});
                 
                 threads.wait_till_done();
                 
