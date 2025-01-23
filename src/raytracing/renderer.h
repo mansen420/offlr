@@ -25,11 +25,11 @@ namespace AiCo
             uint samplesPerPixel;
             pipeline_t pipeline;
 
-            renderer(camera view, uint samplesPerPixel, pipeline_t pipeline) : view(view), samplesPerPixel(samplesPerPixel), pipeline(pipeline){}
+            renderer(camera view, uint samplesPerPixel, const pipeline_t& pipeline) : view(view), samplesPerPixel(samplesPerPixel), pipeline(pipeline){}
 
             void render(raster& image){return render(image, pipeline, view, samplesPerPixel);}
 
-            static void render(raster& image, pipeline_t pipeline, camera view, uint samplesPerPixel)
+            static void render(raster& image, const pipeline_t& pipeline, camera view, uint samplesPerPixel)
             {
                 unsigned int count = threads.count();
                 
@@ -38,7 +38,7 @@ namespace AiCo
                 
                 auto tiles = tile_raster(&image, nrRows, nrCols);
 
-                auto renderTile = [](raster_view tile, unsigned int samplesPerPixel, camera view, pipeline_t pipeline)->void
+                auto renderTile = [](raster_view tile, unsigned int samplesPerPixel, camera view, const pipeline_t& pipeline)->void
                 {
                     for(size_t i = 0; i < tile.width; ++i)
                         for(size_t j = 0; j < tile.height; ++j)
@@ -63,7 +63,8 @@ namespace AiCo
                 
                 //TODO why is taking tile by reference wrong here?
                 for (auto tile : tiles)
-                    threads.enqueue_job([=](){renderTile(tile, samplesPerPixel, view, pipeline);});
+                    threads.enqueue_job([tile, &pipeline, samplesPerPixel, view, renderTile]()
+                    {renderTile(tile, samplesPerPixel, view, pipeline);});
                 
                 threads.wait_till_done();
                 

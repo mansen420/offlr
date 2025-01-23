@@ -30,14 +30,12 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
     sphere smallBall(0.5f, {0.2f, 0.5f, -2.f});
     sphere bigBall(20.f, {0.0f, -20.5f, -2.f});
     
-    auto scene = [&smallBall, &bigBall](ray R, interval K)
-    {
-        return nearest_intersect({smallBall, bigBall})(R, K);
-    };
+    std::vector<intersector_t> scene = {std::ref(smallBall), std::ref(bigBall)};
+    auto sceneNearest = [&scene](ray R, interval K){return nearest_intersect(scene)(R, K);};
 
     renderer R(camera(2.f, width, height), 10, 
-    simple_pipeline(scene, {0.0001f, 10.f}, 
-    simple_tracer(lambertian_diffuse({0.5, 0.5, 0.55}), 100)));
+    simple_pipeline(sceneNearest, {0.0001f, 10.f}, 
+    simple_tracer(lambertian_diffuse({0.5, 0.5, 0.55}), 20)));
 
     micro_timer globalTimer;
 

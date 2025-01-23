@@ -72,9 +72,9 @@ namespace AiCo
         class nearest_intersect : public geometry_base
         {
         public:
-            std::vector<intersector_t> list;
+            const std::vector<intersector_t>& list;
             
-            nearest_intersect(std::vector<intersector_t> list) : list(list) {}
+            nearest_intersect(const std::vector<intersector_t>& list) : list(list) {}
 
             [[nodiscard]] virtual std::optional<intersection_t> operator()(ray R, interval K)const override
             {

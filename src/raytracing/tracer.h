@@ -13,11 +13,11 @@ namespace AiCo
 {
     namespace RT
     {
-        typedef std::function<color3f(ray, intersector_t, interval)> tracer_t;
+        typedef std::function<color3f(ray, const intersector_t&, interval)> tracer_t;
         class tracer_base
         {
         public:
-            virtual color3f operator()(ray, intersector_t, interval) const = 0;
+            virtual color3f operator()(ray, const intersector_t&, interval) const = 0;
 
             virtual ~tracer_base() = default;
         };
@@ -29,7 +29,7 @@ namespace AiCo
             return AiCo::lerp(0.5 * sample.dir.y + 0.5, blue, white);
         };
 
-        inline auto normalTracer = [](const ray& R, interval K, intersector_t insctr)->color3f
+        inline auto normalTracer = [](const ray& R, interval K, const intersector_t& insctr)->color3f
         {
             if(auto insct = insctr(R, K); insct.has_value())
                 return 0.5f * insct->N + glm::vec3(0.5);
@@ -49,13 +49,13 @@ namespace AiCo
             simple_tracer(scatterer_t scatter, uint maxDepth) : maxDepth(maxDepth), 
             scatter(scatter){}
             
-            virtual color3f operator()(ray R, intersector_t insctr, interval K)const override
+            virtual color3f operator()(ray R, const intersector_t& insctr, interval K)const override
             {
                 uint currentDepth = 0; 
                 return trace(R, currentDepth, insctr, K);
             }
         private:
-            color3f trace(ray R, uint currentDepth, intersector_t intersector, interval K)const
+            color3f trace(ray R, uint currentDepth, const intersector_t& intersector, interval K)const
             {
                 if(currentDepth >= maxDepth)
                     return {0.f, 0.f, 0.f};

@@ -25,7 +25,7 @@ namespace AiCo
             interval K;
             tracer_t tracer;
 
-            simple_pipeline(intersector_t sceneInsctr, interval K, tracer_t tracer) : sceneInsctr(sceneInsctr), K(K), tracer(tracer) {}
+            simple_pipeline(const intersector_t& sceneInsctr, interval K, const tracer_t& tracer) : sceneInsctr(sceneInsctr), K(K), tracer(tracer) {}
 
             color3f operator()(ray R)const override
             {
