@@ -40,7 +40,8 @@ namespace AiCo
         while (true)
         {
             auto candidate = randvec({-1.f, 1.f});
-            if (glm::length(candidate) <= 1.f && glm::length(candidate) > std::numeric_limits<float>::min())
+            auto length = glm::length(candidate);
+            if (length <= 1.f && length > std::numeric_limits<float>::min())
                 return glm::normalize(candidate);
         }
     }
@@ -59,7 +60,15 @@ namespace AiCo
         assert(gammanum > 0);
         return glm::pow(color, glm::vec3(1.f/gammanum));
     }
+    
+    /**
+     * @param input vector
+     * @param about surface normal. @warning MUST be normalized by the user!
+     * @return reflection of %in with respect to %about
+     */
+    inline glm::vec3 reflect (const glm::vec3& in, const glm::vec3& about){return in - 2 * glm::dot(in, about)*about;}
 
+    // TODO implement
     /**
      * @brief Linear mapping between two intervals
      * %val must be in %from.

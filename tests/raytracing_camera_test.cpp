@@ -30,7 +30,7 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
     sphere bigBall(20.f, {0.0f, -20.5f, -2.f});
     
     std::vector<intersector_t> scene = {std::ref(smallBall), std::ref(bigBall)};
-
+    
     renderer R
     (
     10,
@@ -40,7 +40,7 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
             {return nearest_intersect(scene)(R, K);}, 
         simple_tracer
         (
-            lambertian_diffuse({0.5, 0.5, 0.55}), 10, {0.0001f, 10.f}
+            specular({1.f, 1.f, 1.f}), 100, {0.0001f, 10.f}
         ),
         camera(2.f, width, height)
         )
