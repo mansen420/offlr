@@ -13,13 +13,14 @@ namespace AiCo
 {
     namespace RT
     {
-        typedef std::function<color3f(ray, const intersector_t&, interval)> tracer_t;
-        class tracer_base
+        typedef std::function<color3f(ray, const intersector_t&)> tracer_t;
+
+        class tracer
         {
         public:
-            virtual color3f operator()(ray, const intersector_t&, interval) const = 0;
+            virtual color3f operator()(ray, const intersector_t&) const = 0;
 
-            virtual ~tracer_base() = default;
+            virtual ~tracer() = default;
         };
         
         inline auto rayGradient = [](const ray& sample) -> color3f
@@ -37,7 +38,7 @@ namespace AiCo
                 return rayGradient(R);
         };
 
-        class simple_tracer : public tracer_base
+        class simple_tracer : public tracer
         {
         public:
             uint maxDepth;
@@ -46,10 +47,12 @@ namespace AiCo
             // perhaps combine geometries and materials into a separate functor, or keep some global scene data (registries)
             scatterer_t scatter;
             
-            simple_tracer(scatterer_t scatter, uint maxDepth) : maxDepth(maxDepth), 
-            scatter(scatter){}
+            interval K;
+
+            simple_tracer(scatterer_t scatter, uint maxDepth, interval rayBounds) : maxDepth(maxDepth),
+            scatter(scatter), K(rayBounds) {}
             
-            virtual color3f operator()(ray R, const intersector_t& insctr, interval K)const override
+            virtual color3f operator()(ray R, const intersector_t& insctr)const override
             {
                 uint currentDepth = 0; 
                 return trace(R, currentDepth, insctr, K);
@@ -62,7 +65,7 @@ namespace AiCo
                 if(auto insct = intersector(R, K); insct.has_value())
                 {   
                     if(auto scatterinfo = scatter(*insct); scatterinfo.has_value())
-                        return scatterinfo.value().attenuation * trace(scatterinfo->out, ++currentDepth, intersector, K);
+                        return scatterinfo->attenuation * trace(scatterinfo->out, ++currentDepth, intersector, K);
                     else
                         return {0, 0, 0};
                 }

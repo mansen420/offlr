@@ -1,7 +1,6 @@
 #include "format.h"
 #include "raytracing/camera.h"
 #include "output.h"
-#include "raytracing/intersection.h"
 #include "raytracing/material.h"
 #include "timer.h"
 #include "raytracing/geometry.h"
@@ -31,18 +30,28 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
     sphere bigBall(20.f, {0.0f, -20.5f, -2.f});
     
     std::vector<intersector_t> scene = {std::ref(smallBall), std::ref(bigBall)};
-    auto sceneNearest = [&scene](ray R, interval K){return nearest_intersect(scene)(R, K);};
 
-    renderer R(camera(2.f, width, height), 10, 
-    simple_pipeline(sceneNearest, {0.0001f, 10.f}, 
-    simple_tracer(lambertian_diffuse({0.5, 0.5, 0.55}), 20)));
+    renderer R
+    (
+    10,
+    simple_pipeline
+        (
+        [&scene](ray R, interval K)
+            {return nearest_intersect(scene)(R, K);}, 
+        simple_tracer
+        (
+            lambertian_diffuse({0.5, 0.5, 0.55}), 10, {0.0001f, 10.f}
+        ),
+        camera(2.f, width, height)
+        )
+    );
 
     micro_timer globalTimer;
 
     R(WNDR.framebuffer);
     WNDR.write_frame();
     std::printf("Fin. %fms", globalTimer.clock().count()/1000.f );
-    R.samplesPerPixel = 10;
+    R.samplesPerPixel = 5;
 
     bool quit = false;
     unsigned int count = 0;
