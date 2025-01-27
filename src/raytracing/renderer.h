@@ -68,8 +68,6 @@ namespace AiCo
                     {renderTile(tile, samplesPerPixel, pipeline);});
                 
                 threads.wait_till_done();
-                
-                printf("FIN.\n");
             }
             
             void operator()(raster& image)

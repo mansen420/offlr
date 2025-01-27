@@ -40,9 +40,9 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
             {return nearest_intersect(scene)(R, K);}, 
         simple_tracer
         (
-            specular({1.f, 1.f, 1.f}), 100, {0.0001f, 10.f}
+            lambertian_diffuse(), 25, {0.0001f, 10.f}
         ),
-        camera(2.f, width, height)
+        camera(2.f, width, height, 80.f,{0.1f, -0.2f, -1.f})
         )
     );
 
@@ -50,8 +50,6 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
 
     R(WNDR.framebuffer);
     WNDR.write_frame();
-    std::printf("Fin. %fms", globalTimer.clock().count()/1000.f );
-    R.samplesPerPixel = 5;
 
     bool quit = false;
     unsigned int count = 0;

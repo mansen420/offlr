@@ -44,10 +44,8 @@ namespace AiCo
                     jobQueue.pop();
                     activeThreads++;
                 }
-                
-                if(!job)
-                    printf("PROBLEM!\n");
-                else if(job)
+
+                if(job)
                     job();
                 
                 {

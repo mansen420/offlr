@@ -1,5 +1,6 @@
 #pragma once
 
+#include "glm/geometric.hpp"
 #include "ray.h"
 #include "utils.h"
 
@@ -16,7 +17,7 @@ namespace AiCo
             const float pxdeltaU, pxdeltaV;
     public:
             const glm::vec3 eye;
-            const glm::vec3 u, v, w; //canonical right, up, and 'inwards' vectors in camera space respectively
+            const glm::vec3 w, u, v; //canonical right, up, and 'inwards' vectors in camera space respectively
             
             const int imgWidth, imgHeight;
     private:
@@ -24,13 +25,30 @@ namespace AiCo
     public:
             camera() = delete;
 
-            camera(float focalLength, int imgWidth, int imgHeight, const glm::vec3& origin = {0, 0, 0}) : 
-            viewportHeight((float(imgHeight)/imgWidth)*viewportWidth), pxdeltaU(viewportWidth/imgWidth), pxdeltaV(viewportHeight/imgHeight),
+            camera(float focalLength, int imgWidth, int imgHeight, float vFOV, const glm::vec3& lookat = {0.f, 0.f, -1.f}, 
+            const glm::vec3& origin = {0, 0, 0}, const glm::vec3& canonicalUp = {0.f, 1.f, 0.f}) : 
+            viewportWidth(/* viewportHeight */ (2.f * focalLength * tanf(0.5 * degrees_to_radians(vFOV))) * float(imgWidth)/imgHeight), 
+            viewportHeight(viewportWidth * float(imgHeight)/imgWidth), 
+            pxdeltaU(viewportWidth/imgWidth), pxdeltaV(viewportHeight/imgHeight),
             eye(origin),
-            u(glm::vec3(viewportWidth/2.f, 0 ,0)),
-            v(glm::vec3(0, viewportHeight/2.f, 0)),
-            w(glm::vec3(0, 0, -focalLength)), imgWidth(imgWidth), imgHeight(imgHeight),
-            topleftpx(eye - u + v + w + 0.5f*glm::vec3(pxdeltaU, pxdeltaV, 0)){}
+            w(focalLength * glm::normalize(lookat)),
+            u(0.5f * viewportWidth * glm::normalize(glm::cross(w, canonicalUp))),
+            v(0.5f * viewportHeight * glm::normalize(glm::cross(u, w))),
+            imgWidth(imgWidth), imgHeight(imgHeight),
+            topleftpx(eye - u + v + w + 0.5f*glm::vec3(pxdeltaU, pxdeltaV, 0))
+            {}
+
+            camera(float focalLength, int imgWidth, int imgHeight, const glm::vec3& lookat = {0.f, 0.f, -1.f}, 
+            const glm::vec3& origin = {0, 0, 0}, float viewportWidth = 2.f, const glm::vec3& canonicalUp = {0.f, 1.f, 0.f}) : 
+            viewportWidth(viewportWidth), viewportHeight(float(imgHeight)/imgWidth * viewportWidth), 
+            pxdeltaU(viewportWidth/imgWidth), pxdeltaV(viewportHeight/imgHeight),
+            eye(origin),
+            w(focalLength * glm::normalize(lookat)),
+            u(0.5f * viewportWidth * glm::normalize(glm::cross(w, canonicalUp))),
+            v(0.5f * viewportHeight * glm::normalize(glm::cross(u, w))),
+            imgWidth(imgWidth), imgHeight(imgHeight),
+            topleftpx(eye - u + v + w + 0.5f*glm::vec3(pxdeltaU, pxdeltaV, 0))
+            {}
 
             /**
              * @brief Returns ray through center of pixel (x, y) of the viewport

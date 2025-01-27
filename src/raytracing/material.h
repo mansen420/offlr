@@ -32,7 +32,7 @@ namespace AiCo
         {
         public:
             color3f albedo = {0.f, 0.f, 0.f}; // "fractional reflectance" 
-            lambertian_diffuse(color3f albedo) : albedo(albedo) {}
+            lambertian_diffuse(color3f albedo = {0.5f, 0.5f, 0.5f}) : albedo(albedo) {}
 
             [[nodiscard]] virtual std::optional<scatter_t> operator()(intersection_t insct)const override
             {
@@ -42,15 +42,17 @@ namespace AiCo
                 return scatter_t(ray(scatterDir, insct.P), albedo);
             }
         };
-        class specular : public material
+        class metallic : public material
         {
         public:
-            color3f albedo = {0.f, 0.f, 0.f};
-            specular(color3f albedo) : albedo(albedo) {}
+            color3f albedo;
+            float fuzz;
+            metallic(color3f albedo = {1.f, 1.f, 1.f}, float fuzz = 0.15) : albedo(albedo), fuzz(fuzz) {}
             [[nodiscard]] virtual std::optional<scatter_t> operator()(intersection_t insct)const override
             {
-                return scatter_t(ray(reflect(insct.inDir, insct.N), insct.P), albedo);
+                return scatter_t(ray(fuzz * randvec_on_unit_sphere() + reflect(insct.inDir, insct.N), insct.P), albedo);
             }
         };
+
     }
 };
