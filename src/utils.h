@@ -1,5 +1,6 @@
 #pragma once
 
+#include "glm/geometric.hpp"
 #include "glm/glm.hpp"
 
 #include <cstdlib>
@@ -29,7 +30,7 @@ namespace AiCo
         return dist(RNG);
     }
     inline float rand(interval K){return K.min + (K.max - K.min)*AiCo::rand();}
-
+    
     inline glm::vec3 randvec(){return glm::vec3(rand(), rand(), rand());}
     inline glm::vec3 randvec(interval K){return glm::vec3(rand(K), rand(K), rand(K));}
     
@@ -43,6 +44,16 @@ namespace AiCo
             auto length = glm::length(candidate);
             if (length <= 1.f && length > std::numeric_limits<float>::min())
                 return glm::normalize(candidate);
+        }
+    }
+    [[nodiscard]] inline glm::vec2 randvec_in_unit_disk()
+    {
+        while(true)
+        {
+            glm::vec2 candidate{rand({-1, 1}), rand({-1, 1})};
+            auto length = glm::length(candidate);
+            if(length <= 1.f && length > std::numeric_limits<float>::min())
+                return candidate;
         }
     }
     [[nodiscard]] inline glm::vec3 randvec_on_hemisphere(glm::vec3 surface_outward_normal)
