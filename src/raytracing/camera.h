@@ -38,7 +38,7 @@ namespace AiCo
             u(0.5f * viewportWidth * glm::normalize(glm::cross(canonicalUp, w))),
             v(0.5f * viewportHeight * glm::normalize(glm::cross(w, u))),
             imgWidth(imgWidth), imgHeight(imgHeight),
-            topleftpx(eye - u + v + w + 0.5f*glm::vec3(pxdeltaU, pxdeltaV, 0)),
+            topleftpx(eye - u + v + w),
             defocusRadius(focalLength * tanf(degrees_to_radians(defocusAngle/2.f))),
             normU(glm::normalize(u)), normV(glm::normalize(v)), normW(glm::normalize(w))
             {printf("%f, %f, %f\n", w.x, w.y, w.z);}
@@ -50,9 +50,9 @@ namespace AiCo
             eye(origin),
             w(focalLength * glm::normalize(lookat - origin)),
             u(0.5f * viewportWidth * glm::normalize(glm::cross(canonicalUp, w))),
-            v(0.5f * viewportHeight * glm::normalize(glm::cross(u, w))),
+            v(0.5f * viewportHeight * glm::normalize(glm::cross(w, u))),
             imgWidth(imgWidth), imgHeight(imgHeight),
-            topleftpx(eye - u + v + w + 0.5f*glm::vec3(pxdeltaU, pxdeltaV, 0)),
+            topleftpx(eye - u + v + w),
             defocusRadius(focalLength * tanf(0.5 * degrees_to_radians(defocusAngle))),
             normU(glm::normalize(u)), normV(glm::normalize(v)), normW(glm::normalize(w))
             {}
