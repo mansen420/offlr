@@ -26,7 +26,7 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
     output::window WNDR("render", width, height, width, height);
     
 
-    sphere smallBall(0.5f, {0.2f, 0.5f, -2.f});
+    sphere smallBall(0.5f, {0.0f, 0.5f, 2.5f});
     sphere bigBall(20.f, {0.0f, -20.5f, -2.f});
     
     std::vector<intersector_t> scene = {std::ref(smallBall), std::ref(bigBall)};
@@ -42,7 +42,7 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
         (
             lambertian_diffuse(), 25, {0.0001f, 10.f}
         ),
-        camera(2.f, width, height, 80.f,{0.1f, -0.2f, -1.f})
+        camera(2.f, width, height, 45.f, 1.f, smallBall.center)
         )
     );
 
@@ -70,6 +70,7 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
         std::printf("frame idx : %d\ttime : %0.2fms\n", count++, frameTimer.clock().count()/1000.f );
         
         smallBall.radius = 0.5 * cos(0.7 * double(globalTimer.time_since_start().count())/1e+6) + 0.5;
+        //smallBall.center.z = -1.5f + 2.f* -0.5 * cos(0.7 * double(globalTimer.time_since_start().count())/1e+6) + 0.5;
     }
     output::terminate();
     return 0;
