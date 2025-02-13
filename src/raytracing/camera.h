@@ -41,7 +41,7 @@ namespace AiCo
             topleftpx(eye - u + v + w),
             defocusRadius(focalLength * tanf(degrees_to_radians(defocusAngle/2.f))),
             normU(glm::normalize(u)), normV(glm::normalize(v)), normW(glm::normalize(w))
-            {printf("%f, %f, %f\n", w.x, w.y, w.z);}
+            {}
 
             camera(float focalLength, int imgWidth, int imgHeight, float defocusAngle, const glm::vec3& lookat = {0.f, 0.f, -1.f}, 
             const glm::vec3& origin = {0, 0, 0}, float viewportWidth = 2.f, const glm::vec3& canonicalUp = {0.f, 1.f, 0.f}) : 
