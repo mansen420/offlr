@@ -13,7 +13,7 @@ namespace AiCo
     {
         class camera
         {
-            const float viewportWidth = 2.f; //arbitrary
+            const float viewportWidth;
             const float viewportHeight;
             const float pxdeltaU, pxdeltaV;
     public:
@@ -27,18 +27,18 @@ namespace AiCo
             const glm::vec3 normU, normV, normW;
     public:
             camera() = delete;
-
+            
             camera(float focalLength, int imgWidth, int imgHeight, float vFOV, float defocusAngle, const glm::vec3& lookat = {0.f, 0.f, -1.f}, 
             const glm::vec3& origin = {0, 0, 0}, const glm::vec3& canonicalUp = {0.f, 1.f, 0.f}) : 
             viewportWidth(/* viewportHeight */ (2.f * focalLength * tanf(degrees_to_radians(vFOV/2.f))) * float(imgWidth)/imgHeight), 
             viewportHeight(viewportWidth * float(imgHeight)/imgWidth), 
             pxdeltaU(viewportWidth/imgWidth), pxdeltaV(viewportHeight/imgHeight),
             eye(origin),
-            w(focalLength * glm::normalize(lookat - origin)),
+            w(focalLength * glm::normalize(origin - lookat)),
             u(0.5f * viewportWidth * glm::normalize(glm::cross(canonicalUp, w))),
             v(0.5f * viewportHeight * glm::normalize(glm::cross(w, u))),
             imgWidth(imgWidth), imgHeight(imgHeight),
-            topleftpx(eye - u + v + w),
+            topleftpx(eye - u + v - w),
             defocusRadius(focalLength * tanf(degrees_to_radians(defocusAngle/2.f))),
             normU(glm::normalize(u)), normV(glm::normalize(v)), normW(glm::normalize(w))
             {}
