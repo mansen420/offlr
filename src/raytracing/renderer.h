@@ -64,8 +64,7 @@ namespace AiCo
                 
                 //TODO why is taking tile by reference wrong here?
                 for (auto tile : tiles)
-                    threads.enqueue_job([tile, &pipeline, samplesPerPixel, renderTile]()
-                    {renderTile(tile, samplesPerPixel, pipeline);});
+                    threads.enqueue_job([tile, &pipeline, samplesPerPixel, renderTile](){renderTile(tile, samplesPerPixel, pipeline);});
                 
                 threads.wait_till_done();
             }

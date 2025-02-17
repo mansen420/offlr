@@ -7,7 +7,6 @@
 #include "raytracing/camera.h"
 #include "raytracing/geometry.h"
 #include "raytracing/tracer.h"
-#include "raster.h"
 
 namespace AiCo 
 {
@@ -26,14 +25,14 @@ namespace AiCo
         public:
             intersector_t sceneInsctr;
             tracer_t tracer;
-            camera view;
+            camera_t view;
 
-            simple_pipeline(const intersector_t& sceneInsctr, const tracer_t& tracer, camera view) : 
+            simple_pipeline(const intersector_t& sceneInsctr, const tracer_t& tracer, const camera_t& view) : 
             sceneInsctr(sceneInsctr), tracer(tracer), view(view) {}
 
             color3f operator()(size_t x, size_t y)const override
             {
-                return tracer(view.samplePixel(x, y), sceneInsctr);
+                return tracer(view(x, y), sceneInsctr);
             }
         };
     }

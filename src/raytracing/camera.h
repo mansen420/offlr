@@ -5,13 +5,23 @@
 #include "utils.h"
 
 #include <cassert>
+#include <cstddef>
 #include <cstdio>
+#include <functional>
 
 namespace AiCo 
 {
     namespace RT
     {
+        typedef std::function<ray(size_t x, size_t y)> camera_t;
+        
         class camera
+        {
+        public:
+            virtual ray operator()(size_t x, size_t y)const = 0;
+        };
+
+        class old_camera
         {
             const float viewportWidth;
             const float viewportHeight;
@@ -26,9 +36,9 @@ namespace AiCo
             const float defocusRadius;
             const glm::vec3 normU, normV, normW;
     public:
-            camera() = delete;
+            old_camera() = delete;
             
-            camera(float focalLength, int imgWidth, int imgHeight, float vFOV, float defocusAngle, const glm::vec3& lookat = {0.f, 0.f, -1.f}, 
+            old_camera(float focalLength, int imgWidth, int imgHeight, float vFOV, float defocusAngle, const glm::vec3& lookat = {0.f, 0.f, -1.f}, 
             const glm::vec3& origin = {0, 0, 0}, const glm::vec3& canonicalUp = {0.f, 1.f, 0.f}) : 
             viewportWidth(/* viewportHeight */ (2.f * focalLength * tanf(degrees_to_radians(vFOV/2.f))) * float(imgWidth)/imgHeight), 
             viewportHeight(viewportWidth * float(imgHeight)/imgWidth), 
@@ -43,7 +53,7 @@ namespace AiCo
             normU(glm::normalize(u)), normV(glm::normalize(v)), normW(glm::normalize(w))
             {}
 
-            camera(float focalLength, int imgWidth, int imgHeight, float defocusAngle, const glm::vec3& lookat = {0.f, 0.f, -1.f}, 
+            old_camera(float focalLength, int imgWidth, int imgHeight, float defocusAngle, const glm::vec3& lookat = {0.f, 0.f, -1.f}, 
             const glm::vec3& origin = {0, 0, 0}, float viewportWidth = 2.f, const glm::vec3& canonicalUp = {0.f, 1.f, 0.f}) : 
             viewportWidth(viewportWidth), viewportHeight(float(imgHeight)/imgWidth * viewportWidth), 
             pxdeltaU(viewportWidth/imgWidth), pxdeltaV(viewportHeight/imgHeight),
@@ -83,6 +93,7 @@ namespace AiCo
                 return ray(topleftpx + vec3((x + offset.x) * pxdeltaU, (-y + offset.y) * pxdeltaV, 0),
                 eye + defocusRadius*(lensRand.x * u + lensRand.y * v));
             }
+            inline ray operator()(size_t x, size_t y)const {return pixelCenter(x, y);}
         };
     }
 };
