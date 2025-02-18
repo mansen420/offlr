@@ -35,12 +35,12 @@ namespace AiCo
             w(glm::normalize(origin - lookat)), u(glm::normalize(glm::cross(worldUp, w))), v(glm::normalize(glm::cross(w, u))),
             eye(origin), viewportWidth(viewportWidth), viewportHeight(float(imgHeight)/imgWidth * viewportWidth),
             pxWidth(viewportWidth/imgWidth), pxHeight(viewportHeight/imgHeight),
-            topleft(eye + 0.5f * viewportHeight * v + 0.5f * viewportWidth * -u + -w)
+            topleft(eye + 0.5f * viewportHeight * v + 0.5f * viewportWidth * -u + glm::length(origin - lookat) * -w)
             {}
 
             ray operator()(size_t x, size_t y) const noexcept override
             {
-                return ray(topleft + float(x + 1) * pxWidth * u - float(y + 1) * pxHeight * v, eye);
+                return ray(topleft + float(x + 0.5) * pxWidth * u - float(y + 0.5) *pxHeight * v, eye);
             }
         };
 

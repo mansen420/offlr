@@ -1,4 +1,3 @@
-#include "format.h"
 #include "raytracing/camera.h"
 #include "output.h"
 #include "raytracing/material.h"
@@ -33,14 +32,14 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
     
     renderer R
     (
-    1,
+    2,
     simple_pipeline
         (
         [&scene](ray R, interval K)
             {return nearest_intersect(scene)(R, K);}, 
-            simple_tracer(lambertian_diffuse(), 2, {0.001f, 10.f}),
+            simple_tracer(lambertian_diffuse(), 5, {0.001f, 10.f}),
             //[](ray R, const intersector_t& insctr){return normalTracer(R, {0.001f, 10.f}, insctr);},
-            static_camera(width, height, {0.f, 0.f, 0.f}, {0.f, 0.f, -1.f})        
+            static_camera(width, height, {0.f, -0.5f, 3.5f}, {0.f, 0.f, -2.5f})        
         )
     ); //FIXME focalLength affects viewport dimensions
 
@@ -68,7 +67,7 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
         std::printf("frame idx : %d\ttime : %0.2fms\n", count++, frameTimer.clock().count()/1000.f );
         
         smallBall.radius = 0.5 * cos(0.7 * double(globalTimer.time_since_start().count())/1e+6) + 0.5;
-        //smallBall.center.z = -1.5f + 2.f* -0.5 * cos(0.7 * double(globalTimer.time_since_start().count())/1e+6) + 0.5;
+        smallBall.center.x = cos(2.f * 0.7 * double(globalTimer.time_since_start().count())/1e+6 + PI/2.f);
     }
     output::terminate();
     return 0;
