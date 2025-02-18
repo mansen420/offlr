@@ -33,14 +33,14 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
     
     renderer R
     (
-    10,
+    1,
     simple_pipeline
         (
         [&scene](ray R, interval K)
             {return nearest_intersect(scene)(R, K);}, 
-        [](ray R, const intersector_t& insctr){return rayGradient(R);},
-        old_camera(0.5f, width, height, 80.f, 0.f, {0.f, 0.f, -1.f},
-        {0.f, 0.f, 0.f})
+            simple_tracer(lambertian_diffuse(), 2, {0.001f, 10.f}),
+            //[](ray R, const intersector_t& insctr){return normalTracer(R, {0.001f, 10.f}, insctr);},
+            static_camera(width, height, {0.f, 0.f, 0.f}, {0.f, 0.f, -1.f})        
         )
     ); //FIXME focalLength affects viewport dimensions
 

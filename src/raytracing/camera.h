@@ -1,5 +1,6 @@
 #pragma once
 
+#include "glm/fwd.hpp"
 #include "glm/geometric.hpp"
 #include "ray.h"
 #include "utils.h"
@@ -20,8 +21,30 @@ namespace AiCo
         public:
             virtual ray operator()(size_t x, size_t y)const = 0;
         };
+        
+        class static_camera : public camera
+        {
+            const glm::vec3 w, u, v;
+            const glm::vec3 eye;
+            const float viewportWidth, viewportHeight;
+            const float pxWidth, pxHeight;
+            const glm::vec3 topleft;
+        public:
+            static_camera(size_t imgWidth, size_t imgHeight, glm::vec3 origin, glm::vec3 lookat, float viewportWidth = 2.f,
+            glm::vec3 worldUp = {0.f, 1.f, 0.f}):
+            w(glm::normalize(origin - lookat)), u(glm::normalize(glm::cross(worldUp, w))), v(glm::normalize(glm::cross(w, u))),
+            eye(origin), viewportWidth(viewportWidth), viewportHeight(float(imgHeight)/imgWidth * viewportWidth),
+            pxWidth(viewportWidth/imgWidth), pxHeight(viewportHeight/imgHeight),
+            topleft(eye + 0.5f * viewportHeight * v + 0.5f * viewportWidth * -u + -w)
+            {}
 
-        class old_camera
+            ray operator()(size_t x, size_t y) const noexcept override
+            {
+                return ray(topleft + float(x + 1) * pxWidth * u - float(y + 1) * pxHeight * v, eye);
+            }
+        };
+
+        class old_camera : public camera
         {
             const float viewportWidth;
             const float viewportHeight;
@@ -29,7 +52,7 @@ namespace AiCo
     public:
             const glm::vec3 eye;
             const glm::vec3 w, u, v; //canonical right, up, and 'inwards' vectors in camera space respectively
-            
+        
             const int imgWidth, imgHeight;
     private:
             const glm::vec3 topleftpx;
@@ -38,8 +61,9 @@ namespace AiCo
     public:
             old_camera() = delete;
             
-            old_camera(float focalLength, int imgWidth, int imgHeight, float vFOV, float defocusAngle, const glm::vec3& lookat = {0.f, 0.f, -1.f}, 
-            const glm::vec3& origin = {0, 0, 0}, const glm::vec3& canonicalUp = {0.f, 1.f, 0.f}) : 
+            old_camera(float focalLength, int imgWidth, int imgHeight, float vFOV, float defocusAngle, 
+            const glm::vec3& lookat = {0.f, 0.f, -1.f}, const glm::vec3& origin = {0, 0, 0}, 
+            const glm::vec3& canonicalUp = {0.f, 1.f, 0.f}) : 
             viewportWidth(/* viewportHeight */ (2.f * focalLength * tanf(degrees_to_radians(vFOV/2.f))) * float(imgWidth)/imgHeight), 
             viewportHeight(viewportWidth * float(imgHeight)/imgWidth), 
             pxdeltaU(viewportWidth/imgWidth), pxdeltaV(viewportHeight/imgHeight),
