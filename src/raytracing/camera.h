@@ -20,30 +20,54 @@ namespace AiCo
         {
         public:
             virtual ray operator()(size_t x, size_t y)const = 0;
+            virtual ~camera() = default;
         };
         
-        class static_camera : public camera
+        //TODO separate the responsibilty of positioning (i.e., a basis) from sampling (i.e., picking points on a 2d plane)
+        class positionable_camera : public camera
         {
             const glm::vec3 w, u, v;
             const glm::vec3 eye;
             const float viewportWidth, viewportHeight;
+            const float focalLength;
             const float pxWidth, pxHeight;
             const glm::vec3 topleft;
-        public:
-            static_camera(size_t imgWidth, size_t imgHeight, glm::vec3 origin, glm::vec3 lookat, float viewportWidth = 2.f,
+            const float defocusRadius;
+        public:  
+            positionable_camera(size_t imgWidth, size_t imgHeight, glm::vec3 lookat = {0.f, 0.f, -1.f}, 
+            float defocusAngle = 2.f, float viewportWidth = 2.f, glm::vec3 origin = {0.f, 0.f, 0.f},
             glm::vec3 worldUp = {0.f, 1.f, 0.f}):
+            
             w(glm::normalize(origin - lookat)), u(glm::normalize(glm::cross(worldUp, w))), v(glm::normalize(glm::cross(w, u))),
-            eye(origin), viewportWidth(viewportWidth), viewportHeight(float(imgHeight)/imgWidth * viewportWidth),
-            pxWidth(viewportWidth/imgWidth), pxHeight(viewportHeight/imgHeight),
-            topleft(eye + 0.5f * viewportHeight * v + 0.5f * viewportWidth * -u + glm::length(origin - lookat) * -w)
+            eye(origin), viewportWidth(viewportWidth), viewportHeight(float(imgHeight)/imgWidth * viewportWidth), 
+            focalLength(glm::length(origin - lookat)), pxWidth(viewportWidth/imgWidth), pxHeight(viewportHeight/imgHeight),
+            topleft(eye + 0.5f * viewportHeight * v + 0.5f * viewportWidth * -u +  focalLength * -w),
+            defocusRadius(focalLength * tanf(degrees_to_radians(defocusAngle/2.f)))
             {}
 
             ray operator()(size_t x, size_t y) const noexcept override
             {
-                return ray(topleft + float(x + 0.5) * pxWidth * u - float(y + 0.5) *pxHeight * v, eye);
+                auto pxOffset = randvec_in_unit_disk();
+                auto defocusOffset = defocusRadius * randvec_in_unit_disk();
+                return ray(topleft + float(x + 0.5 + pxOffset.x) * (pxWidth * u) - float(y + 0.5 + pxOffset.y) * (pxHeight * v), 
+                eye + defocusOffset.x * u + defocusOffset.y * v);
             }
-        };
 
+            virtual ~positionable_camera() = default;
+        };
+        
+        class vFOV_camera : public positionable_camera
+        {
+        public:
+            vFOV_camera(float vFOV, size_t imgWidth, size_t imgHeight, glm::vec3 lookat = {0.f, 0.f, -1.f}, float defocusAngle = 2.f,
+            glm::vec3 origin = {0.f, 0.f, 0.f}, glm::vec3 worldUp = {0.f, 1.f, 0.f}) : 
+            
+            positionable_camera(imgWidth, imgHeight, lookat, defocusAngle, /* height * 1/A.R. */ 2.f * glm::length(lookat - origin) * 
+            tanf(degrees_to_radians(vFOV)/2.f) * float(imgWidth)/imgHeight, origin, worldUp)
+            {}
+        };
+        
+        // logic errors down here. don't use
         class old_camera : public camera
         {
             const float viewportWidth;

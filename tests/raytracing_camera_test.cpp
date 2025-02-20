@@ -7,6 +7,7 @@
 #include "raytracing/tracer.h"
 #include "raytracing/pipeline.h"
 
+
 #include <SDL_events.h>
 #include <SDL_video.h>
 #include <cmath>
@@ -32,16 +33,16 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
     
     renderer R
     (
-    2,
+    10,
     simple_pipeline
         (
         [&scene](ray R, interval K)
             {return nearest_intersect(scene)(R, K);}, 
-            simple_tracer(lambertian_diffuse(), 5, {0.001f, 10.f}),
-            //[](ray R, const intersector_t& insctr){return normalTracer(R, {0.001f, 10.f}, insctr);},
-            static_camera(width, height, {0.f, -0.5f, 3.5f}, {0.f, 0.f, -2.5f})        
+        simple_tracer(metallic({0.85f, 0.85f, 0.9f}), 100, {0.001f, 10.f}),
+        vFOV_camera(40.f, width, height, {-2.f, -2.f , -2.5f}, 0.2f,
+            {3.f, 2.f, -1.f})
         )
-    ); //FIXME focalLength affects viewport dimensions
+    );
 
     micro_timer globalTimer;
 

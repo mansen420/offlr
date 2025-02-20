@@ -27,7 +27,8 @@ namespace AiCo
         {
             AiCo::color3f blue = {0.25, 0.4, 0.8};
             AiCo::color3f white = {1, 1, 1};
-            return AiCo::lerp(0.5 * sample.dir.y + 0.5, blue, white);
+            AiCo::color3f red = {0.5f, 0.2f, 0.1f};
+            return AiCo::lerp(0.5 * sample.dir.y + 0.5, blue, red);
         };
 
         inline auto normalTracer = [](const ray& R, interval K, const intersector_t& insctr)->color3f
@@ -44,7 +45,9 @@ namespace AiCo
             uint maxDepth;
             
             //temporary. material is global to all objects. TODO make material vary on a per-object or per-intersection basis 
-            // perhaps combine geometries and materials into a separate functor, or keep some global scene data (registries)
+            //perhaps combine geometries and materials into a separate functor, or keep some global scene data (registries).
+            //TODO separate scatter and surface mapper, i.e., even if an object fully absorbs its incident ray, it should still be able to return 
+            //an attenuation. maybe scatter_t must always provide an 'attenuation' but keep the scattered ray optional to signal absorption?
             scatterer_t scatter;
             
             interval K;
@@ -52,13 +55,13 @@ namespace AiCo
             simple_tracer(scatterer_t scatter, uint maxDepth, interval rayBounds) : maxDepth(maxDepth),
             scatter(scatter), K(rayBounds) {}
             
-            virtual color3f operator()(ray R, const intersector_t& insctr)const override
+            inline virtual color3f operator()(ray R, const intersector_t& insctr)const override
             {
                 uint currentDepth = 0; 
                 return trace(R, currentDepth, insctr, K);
             }
         private:
-            color3f trace(ray R, uint currentDepth, const intersector_t& intersector, interval K)const
+            inline color3f trace(ray R, uint currentDepth, const intersector_t& intersector, interval K)const
             {
                 if(currentDepth >= maxDepth)
                     return {0.f, 0.f, 0.f};
