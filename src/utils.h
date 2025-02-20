@@ -19,16 +19,25 @@ namespace AiCo
     template<glm::length_t L, typename T>
     [[nodiscard]] glm::vec<L, T> lerp (float alpha, glm::vec<L, T> a, glm::vec<L, T> b) {return (1-alpha)*a + (alpha)*b;}
     
+
+    inline float fast_rand()
+    {
+        static thread_local std::minstd_rand RNG;
+        std::uniform_real_distribution<float> dist(0.f, 1.f);
+        return dist(RNG);
+    }
     /**
      * @brief Returns random number in [0, 1[
      * thread-safe.
      */
     inline float rand()
-    {
+    {   //high quality, but slow 
+        return fast_rand(); //XXX testing
         static thread_local std::mt19937 RNG(std::random_device{}());
         std::uniform_real_distribution<float> dist(0.f, 1.f);
         return dist(RNG);
     }
+
     inline float rand(interval K){return K.min + (K.max - K.min)*AiCo::rand();}
     
     inline glm::vec3 randvec(){return glm::vec3(rand(), rand(), rand());}

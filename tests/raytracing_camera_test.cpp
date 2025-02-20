@@ -33,12 +33,12 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
     
     renderer R
     (
-    10,
+    5,
     simple_pipeline
         (
         [&scene](ray R, interval K)
             {return nearest_intersect(scene)(R, K);}, 
-        simple_tracer(metallic({0.85f, 0.85f, 0.9f}), 100, {0.001f, 10.f}),
+        simple_tracer(metallic({0.85f, 0.85f, 0.9f}), 10, {0.001f, 10.f}),
         vFOV_camera(40.f, width, height, {-2.f, -2.f , -2.5f}, 0.2f,
             {3.f, 2.f, -1.f})
         )
