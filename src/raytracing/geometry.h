@@ -15,9 +15,6 @@ namespace AiCo
     namespace RT 
     {
         typedef std::function<std::optional<intersection_t>(ray R, interval k)> intersector_t;
-        typedef std::function<color3f(intersector_t)> surface_mapper_t;
-
-        class surface_mapper_base;
         class geometry_base
         {
         public:

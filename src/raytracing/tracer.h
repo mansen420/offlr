@@ -44,10 +44,6 @@ namespace AiCo
         public:
             uint maxDepth;
             
-            //temporary. material is global to all objects. TODO make material vary on a per-object or per-intersection basis 
-            //perhaps combine geometries and materials into a separate functor, or keep some global scene data (registries).
-            //TODO separate scatter and surface mapper, i.e., even if an object fully absorbs its incident ray, it should still be able to return 
-            //an attenuation. maybe scatter_t must always provide an 'attenuation' but keep the scattered ray optional to signal absorption?
             scatterer_t scatter;
             
             interval K;
@@ -67,10 +63,10 @@ namespace AiCo
                     return {0.f, 0.f, 0.f};
                 if(auto insct = intersector(R, K); insct.has_value())
                 {   
-                    if(auto scatterinfo = scatter(*insct); scatterinfo.has_value())
-                        return scatterinfo->attenuation * trace(scatterinfo->out, ++currentDepth, intersector, K);
+                    if(auto scatterinfo = scatter(*insct); scatterinfo.out.has_value())
+                        return scatterinfo.attenuation * trace(scatterinfo.out.value(), ++currentDepth, intersector, K);
                     else
-                        return {0, 0, 0};
+                        return scatterinfo.attenuation;
                 }
                 else
                     return rayGradient(R);
