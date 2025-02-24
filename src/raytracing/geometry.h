@@ -1,12 +1,13 @@
 #pragma once
 
-#include "format.h"
 #include "interval.h"
 #include "ray.h"
 #include "intersection.h"
-#include "utils.h"
+#include "metrics.h"
 
+#include <atomic>
 #include <cfloat>
+#include <cstddef>
 #include <limits.h>
 #include <optional>
 
@@ -29,8 +30,10 @@ namespace AiCo
             float radius;
             glm::vec3 center;
 
+            const material_t& mat;
+
             sphere() = delete;
-            sphere(float radius, glm::vec3 center) : radius(radius), center(center) {}
+            sphere(float radius, glm::vec3 center, const material_t& mat) : radius(radius), center(center), mat(mat) {}
             
             [[nodiscard]] virtual std::optional<intersection_t> operator()(ray R, interval K)const override
             {
@@ -61,11 +64,10 @@ namespace AiCo
                 }
                 
                 glm::vec3 P = R.at(root);
-                return intersection_t(R, (P - center)/radius, P, root);
+                return intersection_t(R, (P - center)/radius, P, root, mat);
             }
         };
         
-
         class nearest_intersect : public geometry_base
         {
         public:
@@ -79,18 +81,23 @@ namespace AiCo
             }
 
         private:
-            [[nodiscard]] virtual std::optional<intersection_t> test_intersect(ray R, interval K)const
+            [[nodiscard]] inline virtual std::optional<intersection_t> test_intersect(ray R, interval K)const
             {
-                float closestIntersect = K.min;
+                std::optional<intersection_t> result = {};
+                float closestIntersect = K.max;
                 for(const auto& insctr : list)
                 {
-                    if(auto insct = insctr(R, {closestIntersect, K.max}); insct.has_value())
-                    {
-                        closestIntersect = insct->t;
-                        return insct;
-                    }
+                    LOCAL_INSCT_CNTR++;
+                    if(LOCAL_INSCT_CNTR%(1<<16) == 0)
+                        INSCT_CNTR.fetch_add(1<<16, std::memory_order_relaxed);
+                    if(auto insct = insctr(R, {K.min, closestIntersect}); insct.has_value())
+                        if(insct->t < closestIntersect)
+                        {
+                            closestIntersect = insct->t;
+                            result.emplace(*insct);
+                        }
                 }
-                return {};
+                return result;
             }
         };
     };

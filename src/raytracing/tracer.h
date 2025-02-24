@@ -28,7 +28,7 @@ namespace AiCo
             AiCo::color3f blue = {0.25, 0.4, 0.8};
             AiCo::color3f white = {1, 1, 1};
             AiCo::color3f red = {0.5f, 0.2f, 0.1f};
-            return AiCo::lerp(0.5 * sample.dir.y + 0.5, blue, red);
+            return AiCo::lerp(0.5 * sample.dir.y + 0.5, blue, white);
         };
 
         inline auto normalTracer = [](const ray& R, interval K, const intersector_t& insctr)->color3f
@@ -39,18 +39,15 @@ namespace AiCo
                 return rayGradient(R);
         };
 
-        class simple_tracer : public tracer
+        class unbiased_tracer : public tracer
         {
         public:
             uint maxDepth;
             
-            scatterer_t scatter;
-            
             interval K;
 
-            simple_tracer(scatterer_t scatter, uint maxDepth, interval rayBounds) : maxDepth(maxDepth),
-            scatter(scatter), K(rayBounds) {}
-            
+            unbiased_tracer(uint maxDepth, interval rayBounds) : maxDepth(maxDepth), K(rayBounds) {}
+
             inline virtual color3f operator()(ray R, const intersector_t& insctr)const override
             {
                 uint currentDepth = 0; 
@@ -61,15 +58,18 @@ namespace AiCo
             {
                 if(currentDepth >= maxDepth)
                     return {0.f, 0.f, 0.f};
+                
+                //TODO early termination for low energy rays?
+                
                 if(auto insct = intersector(R, K); insct.has_value())
-                {   
-                    if(auto scatterinfo = scatter(*insct); scatterinfo.out.has_value())
-                        return scatterinfo.attenuation * trace(scatterinfo.out.value(), ++currentDepth, intersector, K);
+                {
+                    if(auto scatterinfo = insct->mat.scatter(*insct); scatterinfo.has_value())
+                        return insct->mat.texture(*insct) * trace(scatterinfo->out, ++currentDepth, intersector, K);
                     else
-                        return scatterinfo.attenuation;
+                        return insct->mat.texture(*insct);
                 }
                 else
-                    return rayGradient(R);
+                    return 0.8f * rayGradient(R);
             }
         };
     }

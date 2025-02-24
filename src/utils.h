@@ -26,6 +26,7 @@ namespace AiCo
         std::uniform_real_distribution<float> dist(0.f, 1.f);
         return dist(RNG);
     }
+
     /**
      * @brief Returns random number in [0, 1[
      * thread-safe.
@@ -54,7 +55,7 @@ namespace AiCo
             if (length <= 1.f && length > std::numeric_limits<float>::min())
                 return glm::normalize(candidate);
         }
-    }
+    }   
     [[nodiscard]] inline glm::vec2 randvec_in_unit_disk()
     {
         while(true)
@@ -65,6 +66,7 @@ namespace AiCo
                 return candidate;
         }
     }
+    
     [[nodiscard]] inline glm::vec3 randvec_on_hemisphere(glm::vec3 surface_outward_normal)
     {
         auto candidate = randvec_on_unit_sphere();
@@ -73,6 +75,7 @@ namespace AiCo
         else
             return -candidate;
     }
+    
     template<glm::length_t len>
     [[nodiscard]] inline bool nearzero_vec(glm::vec<len, float> u, float precision = 1e-8){return interval(-precision, precision).contains(u);}
     [[nodiscard]] inline color3f gamma(color3f color, float gammanum)
@@ -93,5 +96,8 @@ namespace AiCo
      * @brief Linear mapping between two intervals
      * %val must be in %from.
      */
-    [[nodiscard]] inline float map(float val, interval from, interval to = interval::NORM);
+    [[nodiscard]] inline float map(float val, interval from, interval to = interval::NORM)
+    {
+        return (val - from.min)/(from.max - from.min) * (to.min - to.max) + to.min;
+    }
 }

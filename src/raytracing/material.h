@@ -12,25 +12,16 @@ namespace AiCo
 {
     namespace RT
     {
-        typedef std::function<color3f(const intersection_t&)> texturer_t;
-        
-        struct scatter_t
-        {
-            scatter_t(const ray& out) : out(out) {}
-            scatter_t() = delete;
-            const ray out;
-        };
-        typedef std::function<std::optional<scatter_t>(const intersection_t&)> scatterer_t;
 
-        class scatterer
+        class scatter_model
         {
         public:
             [[nodiscard]] virtual std::optional<scatter_t> operator()(const intersection_t&)const = 0;
 
-            virtual ~scatterer() = default;
+            virtual ~scatter_model() = default;
         };
 
-        class lambertian_diffuse : public scatterer
+        class lambertian_diffuse : public scatter_model
         {
         public:
             color3f albedo = {0.f, 0.f, 0.f}; // "fractional reflectance" 
@@ -44,7 +35,7 @@ namespace AiCo
                 return scatter_t(ray(scatterDir, insct.P));
             }
         };
-        class metallic : public scatterer
+        class metallic : public scatter_model
         {
         public:
             color3f albedo;

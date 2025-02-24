@@ -24,6 +24,11 @@ namespace AiCo
             friend class registry<T>;
         };
         
+        [[nodiscard]] inline T& operator[](handle_t handle)
+        {
+            return *data[handle];
+        }
+
         void remove(handle_t handle)
         {
             assert(handle < data.size() && data.at(handle) != nullptr);
@@ -33,14 +38,14 @@ namespace AiCo
 
             freeIndices.push_back(handle);
         }
-        handle_t add(T* Tptr)
+        [[nodiscard]] handle_t add(T* Tptr)
         {
             assert(Tptr != nullptr);
             if(freeIndices.empty())
             {
-                data.reserve(data.size() + 1);
+                data.reserve(2 * data.size());
                 data.push_back(Tptr);
-                return handle_t{data.size() - 1};                   
+                return handle_t{data.size() - 1};
             }
             else
             {
@@ -51,6 +56,11 @@ namespace AiCo
                 return idx;
             }
         }
+        ~registry()
+        {
+            for (const auto ptr : data)
+                if(ptr)
+                    delete ptr;
+        }
     };
 }
-
