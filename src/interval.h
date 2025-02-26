@@ -17,11 +17,13 @@ namespace AiCo
         const float min, max;
 
         [[nodiscard]] interval(float min, float max) : min(min), max(max){}
-        [[nodiscard]] float span()const{return max - min;}
 
+        [[nodiscard]] inline float span()const{return max - min;}
+        
+        [[nodiscard]] inline bool empty()const{return min > max;}
 
-        [[nodiscard]] bool contains(float x)const{return x >= min && x <= max;}
-        [[nodiscard]] bool contains_proper(float x)const{return x > min && x < max;}
+        [[nodiscard]] inline bool contains(float x)const{return x >= min && x <= max;}
+        [[nodiscard]] inline bool contains_proper(float x)const{return x > min && x < max;}
 
         template<glm::length_t len, typename T>
         requires (std::is_arithmetic_v<T>)
@@ -32,7 +34,6 @@ namespace AiCo
                     return false;
             return true;
         }
-        
         template<glm::length_t len, typename T>
         requires (std::is_arithmetic_v<T>)
         [[nodiscard]] bool contains_proper(glm::vec<len, T> u)const
@@ -43,7 +44,7 @@ namespace AiCo
             return true;
         }
         
-        [[nodiscard]] float clamp(float x)const{return std::clamp(x, min, max);}
+        [[nodiscard]] inline float clamp(float x)const{return std::clamp(x, min, max);}
  
         template<glm::length_t len, typename T>
         requires (std::is_arithmetic_v<T>)
@@ -52,6 +53,7 @@ namespace AiCo
             glm::vec<len, T> res;
             for (glm::length_t i = 0; i < len; ++i)
                 res[i] = clamp(u[i]);
+            return res;
         }
         
         static const interval EMPTY, NORM, CANON, UNIVERSE;
@@ -61,8 +63,8 @@ namespace AiCo
         interval operator-()const{return {-max, -min};}
         interval operator-(float x)const{return (*this) + -x;}
         
-        interval operator*(float x)const{return interval(x * min, x * max);}
-        interval operator/(float x)const{assert(x!=0); return interval(min / x, max / x);}
+        interval operator*(float x)const{return x >= 0.f ? interval(x * min, x * max) : interval(x * max, x * min);}
+        interval operator/(float x)const{assert(x!=0); return (*this) * (1.f/x);}
     };
     inline interval operator*(float x, const interval u){return u * x;}
     inline interval operator/(float x, const interval u){return u / x;}

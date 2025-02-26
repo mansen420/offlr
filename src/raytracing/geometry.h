@@ -4,27 +4,73 @@
 #include "ray.h"
 #include "intersection.h"
 #include "metrics.h"
+#include "utils.h"
 
 #include <atomic>
 #include <cfloat>
 #include <cstddef>
+#include <functional>
 #include <limits.h>
 #include <optional>
+#include <utility>
 
 namespace AiCo 
 {
     namespace RT 
     {
+        typedef std::function<bool(ray R)> spatial_rejector_t;
+        
+        class AABB
+        {
+            glm::vec3 min, max;
+
+            bool operator()(const ray& R)
+            {
+                //reject parallel rays that start outside the box
+                if (R.dir.x == 0 && (R.origin.x < min.x || R.origin.x > max.x)) return false;
+                if (R.dir.y == 0 && (R.origin.y < min.y || R.origin.y > max.y)) return false;
+                if (R.dir.z == 0 && (R.origin.z < min.z || R.origin.z > max.z)) return false;
+ 
+                auto invDir = 1.f/R.dir;
+                
+                float Xtmin = invDir.x * (min.x - R.origin.x);
+                float Xtmax = invDir.x * (max.x - R.origin.x);
+                if(invDir.x < 0.f) std::swap(Xtmin, Xtmax);
+                
+                if(Xtmin > Xtmax) return false;
+
+                float Ytmin = invDir.y * (min.y - R.origin.y);
+                float Ytmax = invDir.y * (max.y - R.origin.y);
+                if(invDir.y < 0.f) std::swap(Ytmin, Ytmax);
+
+                if(Ytmin > Ytmax) return false;
+                
+                auto XYoverlap = overlap({Xtmin, Xtmax}, {Ytmin, Ytmax});
+                if(XYoverlap.empty()) return false;
+                
+                float Ztmin = invDir.z * (min.z - R.origin.z);
+                float Ztmax = invDir.z * (max.z - R.origin.z);
+                if(invDir.z < 0.f) std::swap(Ztmin, Ztmax);
+                
+                if(Ztmin > Ztmax) return false;
+
+                auto XYZoverlap = overlap({Ztmin, Ztmax}, XYoverlap);
+
+                return !XYZoverlap.empty();
+            };
+        };
+        
+
         typedef std::function<std::optional<intersection_t>(ray R, interval k)> intersector_t;
-        class geometry_base
+        class geometry
         {
         public:
             [[nodiscard]] virtual std::optional<intersection_t> operator()(ray R, interval K)const = 0;
 
-            virtual ~geometry_base() = default;
+            virtual ~geometry() = default;
         };
 
-        class sphere : public geometry_base
+        class sphere : public geometry
         {
         public:
             float radius;
@@ -68,7 +114,7 @@ namespace AiCo
             }
         };
         
-        class nearest_intersect : public geometry_base
+        class nearest_intersect : public geometry
         {
         public:
             const std::vector<intersector_t>& list;

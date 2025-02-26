@@ -91,7 +91,6 @@ namespace AiCo
      */
     inline glm::vec3 reflect (const glm::vec3& in, const glm::vec3& about){return in - 2 * glm::dot(in, about)*about;}
 
-    // TODO implement
     /**
      * @brief Linear mapping between two intervals
      * %val must be in %from.
@@ -99,5 +98,14 @@ namespace AiCo
     [[nodiscard]] inline float map(float val, interval from, interval to = interval::NORM)
     {
         return (val - from.min)/(from.max - from.min) * (to.min - to.max) + to.min;
+    }
+
+    [[nodiscard]] inline bool overlaps(const interval& K, const interval& T)
+    {
+        return K.min < T.max && K.max > T.min;
+    }
+    [[nodiscard]] inline interval overlap(const interval& K, const interval& T)
+    {
+        return {std::max(K.min, T.min), std::min(K.max, T.max)};
     }
 }
