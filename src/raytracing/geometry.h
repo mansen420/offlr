@@ -133,9 +133,12 @@ namespace AiCo
                 float closestIntersect = K.max;
                 for(const auto& insctr : list)
                 {
+                    // intersection count mechanism. add thread local variable to globabl atomic every 2^16 intersects
                     LOCAL_INSCT_CNTR++;
                     if(LOCAL_INSCT_CNTR%(1<<16) == 0)
                         INSCT_CNTR.fetch_add(1<<16, std::memory_order_relaxed);
+                    //
+
                     if(auto insct = insctr(R, {K.min, closestIntersect}); insct.has_value())
                         if(insct->t < closestIntersect)
                         {

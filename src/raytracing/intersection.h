@@ -11,14 +11,17 @@ namespace AiCo::RT
 
     struct intersection_t
     {
-        intersection_t(const ray& R, const glm::vec3& outwardNormal, const glm::vec3& P, float t, const material_t& mat) : 
-        P(P), N(outwardNormal), inDir(R.dir), t(t), frontFace(glm::dot(outwardNormal, R.dir) < 0), mat(mat) {}
+        intersection_t(const ray& R, const glm::vec3& outwardNormal, const glm::vec3& P, float t, const glm::vec2& surface_coords, 
+        const material_t& mat) : 
+        P(P), N(outwardNormal), inDir(R.dir), t(t), frontFace(glm::dot(outwardNormal, R.dir) < 0), UV(surface_coords), mat(mat) {}
         
         intersection_t() = delete;
 
         const glm::vec3 P, N, inDir;
         const float t;
         const bool frontFace;
+        
+        const glm::vec2 UV;
 
         const material_t& mat;
     };
