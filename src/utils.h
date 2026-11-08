@@ -1,8 +1,10 @@
 #pragma once
 
+#include "glm/fwd.hpp"
 #include "glm/geometric.hpp"
 #include "glm/glm.hpp"
 
+#include <cstdio>
 #include <cstdlib>
 #include <limits>
 #include <random>
@@ -18,6 +20,7 @@ namespace AiCo
 
     template<glm::length_t L, typename T>
     [[nodiscard]] glm::vec<L, T> lerp (float alpha, glm::vec<L, T> a, glm::vec<L, T> b) {return (1-alpha)*a + (alpha)*b;}
+    [[nodiscard]] inline float lerp (float alpha, float a, float b) {return (1-alpha)*a + (alpha)*b;}
     
 
     inline float fast_rand()
@@ -33,7 +36,7 @@ namespace AiCo
      */
     inline float rand()
     {   //high quality, but slow 
-        return fast_rand(); //XXX testing
+        //return fast_rand(); //XXX testing
         static thread_local std::mt19937 RNG(std::random_device{}());
         std::uniform_real_distribution<float> dist(0.f, 1.f);
         return dist(RNG);
@@ -97,7 +100,7 @@ namespace AiCo
      */
     [[nodiscard]] inline float map(float val, interval from, interval to = interval::NORM)
     {
-        return (val - from.min)/(from.max - from.min) * (to.min - to.max) + to.min;
+        return (val + from.min)/(from.max - from.min) * (to.min - to.max) + to.min;
     }
 
     [[nodiscard]] inline bool overlaps(const interval& K, const interval& T)
@@ -107,5 +110,15 @@ namespace AiCo
     [[nodiscard]] inline interval overlap(const interval& K, const interval& T)
     {
         return {std::max(K.min, T.min), std::min(K.max, T.max)};
+    }
+    [[nodiscard]] inline void make_tangent_frame(glm::vec3& A, glm::vec3& B, const glm::vec3& C)
+    {
+        if(nearzero_vec(C))
+            printf("DEBUG: making tangets from near zero vector");
+        A =  glm::cross(C, glm::vec3{0.f, 1.f, 0.f});
+        if(nearzero_vec(A))
+            A =  glm::cross(C, glm::vec3{1.f, 0.f, 0.f});
+        A = glm::normalize(A);
+        B = glm::normalize(glm::cross(A, C));
     }
 }

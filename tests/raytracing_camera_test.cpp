@@ -38,9 +38,6 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
     auto DIFFUSE = mat_registry.add(new material_t{.scatter = lambertian_diffuse(), 
     .texture = [](const intersection_t&){return color3f{0.5f, 0.5f, 0.5f};}});
 
-    auto EMIT = mat_registry.add(new material_t{.scatter=[](const intersection_t&){return std::nullopt;}, 
-    .texture = [](const intersection_t&){return color3f{1.0f, 0.95f, 0.95f};}});
-
     sphere smallBall(0.5f, {0.0f, 0.5f, -2.5f}, mat_registry[METAL]);
     sphere bigBall(20.f, {0.0f, -20.5f, -2.f}, mat_registry[DIFFUSE]);
     sphere rightBall(1.f, {2.f, 0.0f, -4.5f}, mat_registry[DIFFUSE]);
@@ -53,13 +50,13 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
     
     renderer R
     (
-    5,
+    50,
     simple_pipeline
         (
         [&scene](ray R, interval K)
             {return nearest_intersect(scene)(R, K);}, 
-        unbiased_tracer(10, {0.001f, 10.f}),
-        vFOV_camera(40.f, width, height, {-2.f, -2.f , -2.5f}, 0.2f,
+        unbiased_tracer(100, {0.001f, 10.f}),
+        vFOV_camera(20.f, width, height, {-2.f, -2.f , -2.5f}, 0.2f,
             {3.f, 2.f, -1.f})
         )
     );
@@ -70,8 +67,6 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
     WNDR.write_frame();
 
     bool quit = false;
-
-    unsigned int count = 0;   
 
     while(!quit)
     {
@@ -87,8 +82,6 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
         WNDR.write_frame();
         WND.write_frame();
        
-        //std::printf("frame idx : %d\ttime : %0.2fms\n", count++, frameTimer.clock().count()/1000.f );
-        
         auto inscts = INSCT_CNTR.load(std::memory_order_relaxed);
         auto engtime = float(globalTimer.time_since_start().count())/1000.f;
         
@@ -100,11 +93,6 @@ int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv)
         
         if(!quit)
             std::printf("\033[F\033[F\033[F\033[F");
-        
-        smallBall.radius = map(cos(0.7 * double(globalTimer.time_since_start().count())/1e+6), {-1.f, 1.f}, 
-        {1.2f, 1.8f});
-        smallBall.center.x = cos(0.2f * 0.7 * double(globalTimer.time_since_start().count())/1e+6 + PI/2.f);
-        smallBall.center.y = cos(1.2f * 0.7 * double(globalTimer.time_since_start().count())/1e+6);
     }
     output::terminate();
     return 0;

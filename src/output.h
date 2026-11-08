@@ -11,10 +11,10 @@ namespace AiCo
         void terminate();
         class window
         {
-            SDL_Window* handle;
             SDL_Renderer* renderer;
             SDL_Texture* frame;
     public:
+            SDL_Window* handle;
             raster framebuffer;
             window(const char* title, uint x, uint y, uint width, uint height);
             void write_frame();

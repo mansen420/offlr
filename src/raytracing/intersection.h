@@ -29,9 +29,10 @@ namespace AiCo::RT
     
     struct scatter_t
     {
-        scatter_t(const ray& out) : out(out) {}
+        scatter_t(const ray& out, const color3f& albedo = {0.f, 0.f, 0.f}) : out(out), albedo(albedo) {}
         scatter_t() = delete;
         const ray out;
+        const color3f albedo;
     };
     typedef std::function<std::optional<scatter_t>(const intersection_t&)> scatterer_t;
 

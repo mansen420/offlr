@@ -101,7 +101,6 @@ namespace AiCo
 
         void wait_till_done()
         {
-
             if(all_idle())
                 return;
             else
